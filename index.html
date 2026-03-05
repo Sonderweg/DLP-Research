@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DLP Research — Artifact Library</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0e14;
+      color: #c8d2dc;
+      font-family: 'IBM Plex Sans', sans-serif;
+      min-height: 100vh;
+      padding: 40px 24px;
+    }
+
+    .header {
+      max-width: 1100px;
+      margin: 0 auto 40px;
+      border-bottom: 1px solid #1e2733;
+      padding-bottom: 24px;
+    }
+
+    .header-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: #3d4f5f;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #e8edf2;
+    }
+
+    .header-sub {
+      font-size: 12px;
+      color: #5a6a78;
+      margin-top: 6px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .search-bar {
+      max-width: 1100px;
+      margin: 0 auto 32px;
+    }
+
+    .search-bar input {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid #1e2733;
+      border-radius: 6px;
+      padding: 10px 16px;
+      color: #c8d2dc;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-bar input:focus {
+      border-color: #3d6b8f;
+    }
+
+    .search-bar input::placeholder { color: #3d4f5f; }
+
+    .section {
+      max-width: 1100px;
+      margin: 0 auto 40px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .section-icon {
+      font-size: 16px;
+    }
+
+    .section-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: #7a8b9a;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .section-line {
+      flex: 1;
+      height: 1px;
+      background: #1e2733;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: #0d1117;
+      border: 1px solid #1e2733;
+      border-radius: 8px;
+      padding: 18px 16px;
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
+      transition: all 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+      background: #111820;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .card:hover::before { opacity: 1; }
+
+    .card-icon {
+      font-size: 24px;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 13px;
+      color: #e8edf2;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+
+    .card-desc {
+      font-size: 11px;
+      color: #5a6a78;
+      line-height: 1.5;
+    }
+
+    .card-date {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      color: #2a3544;
+      margin-top: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .card-tag {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-size: 9px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+
+    .empty {
+      display: none;
+      text-align: center;
+      padding: 60px;
+      color: #3d4f5f;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+    }
+
+    .footer {
+      max-width: 1100px;
+      margin: 60px auto 0;
+      border-top: 1px solid #1e2733;
+      padding-top: 20px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: #2a3544;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-label">Davide Leone & Partners</div>
+    <h1>Research Artifact Library</h1>
+    <div class="header-sub">Interactive dashboards · Click any card to open</div>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="Search artifacts..." oninput="filterCards()" />
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       DEFENCE
+  ════════════════════════════════════════════ -->
+  <div class="section" data-section="defence">
+    <div class="section-header">
+      <span class="section-icon">🛡️</span>
+      <span class="section-title">Defence</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="cards">
+
+      <a class="card" href="eu-air-defence-map.html" target="_blank"
+         style="--accent: #1a6b3c; --accent-bg: #1a6b3c22;"
+         data-title="European Air & Missile Defence Map"
+         data-tags="defence air missile sovereignty">
+        <span class="card-icon">🗺️</span>
+        <div class="card-title">European Air & Missile Defence</div>
+        <div class="card-desc">Systems by altitude × range. Sovereignty filters, manufacturer breakdown, interactive scatter plot.</div>
+        <span class="card-tag">Chart + Table</span>
+        <div class="card-date">Mar 2025</div>
+      </a>
+
+      <!-- ADD MORE DEFENCE CARDS HERE -->
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       TELCO
+  ════════════════════════════════════════════ -->
+  <div class="section" data-section="telco">
+    <div class="section-header">
+      <span class="section-icon">📡</span>
+      <span class="section-title">European Telco</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="cards">
+
+      <!-- ADD TELCO CARDS HERE -->
+      <div class="card" style="--accent: #1a4a6b; --accent-bg: #1a4a6b22; opacity: 0.4; cursor: default;">
+        <span class="card-icon">➕</span>
+        <div class="card-title">Add your next artifact</div>
+        <div class="card-desc">Upload an HTML file and add a card here.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SEMICONDUCTORS
+  ════════════════════════════════════════════ -->
+  <div class="section" data-section="semiconductors">
+    <div class="section-header">
+      <span class="section-icon">⚡</span>
+      <span class="section-title">Semiconductors</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="cards">
+
+      <!-- ADD SEMI CARDS HERE -->
+      <div class="card" style="--accent: #8e44ad; --accent-bg: #8e44ad22; opacity: 0.4; cursor: default;">
+        <span class="card-icon">➕</span>
+        <div class="card-title">Add your next artifact</div>
+        <div class="card-desc">Upload an HTML file and add a card here.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       COMMODITIES
+  ════════════════════════════════════════════ -->
+  <div class="section" data-section="commodities">
+    <div class="section-header">
+      <span class="section-icon">🪙</span>
+      <span class="section-title">Commodities</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="cards">
+
+      <!-- ADD COMMODITIES CARDS HERE -->
+      <div class="card" style="--accent: #b8860b; --accent-bg: #b8860b22; opacity: 0.4; cursor: default;">
+        <span class="card-icon">➕</span>
+        <div class="card-title">Add your next artifact</div>
+        <div class="card-desc">Upload an HTML file and add a card here.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       ENERGY / ELECTRIFICATION
+  ════════════════════════════════════════════ -->
+  <div class="section" data-section="energy">
+    <div class="section-header">
+      <span class="section-icon">⚡</span>
+      <span class="section-title">Energy & Electrification</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="cards">
+
+      <!-- ADD ENERGY CARDS HERE -->
+      <div class="card" style="--accent: #e67e22; --accent-bg: #e67e2222; opacity: 0.4; cursor: default;">
+        <span class="card-icon">➕</span>
+        <div class="card-title">Add your next artifact</div>
+        <div class="card-desc">Upload an HTML file and add a card here.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="empty" id="empty-msg">No artifacts match your search.</div>
+
+  <div class="footer">DLP Internal · Not for distribution</div>
+
+  <script>
+    function filterCards() {
+      const q = document.getElementById('search').value.toLowerCase();
+      const cards = document.querySelectorAll('.card[data-title]');
+      let anyVisible = false;
+
+      cards.forEach(card => {
+        const text = (card.dataset.title + ' ' + card.dataset.tags + ' ' + card.innerText).toLowerCase();
+        const match = text.includes(q);
+        card.style.display = match ? 'block' : 'none';
+        if (match) anyVisible = true;
+      });
+
+      // Hide/show sections with no visible cards
+      document.querySelectorAll('.section').forEach(section => {
+        const visibleCards = section.querySelectorAll('.card[data-title]:not([style*="display: none"])');
+        section.style.display = visibleCards.length > 0 || q === '' ? 'block' : 'none';
+      });
+
+      document.getElementById('empty-msg').style.display = (!anyVisible && q !== '') ? 'block' : 'none';
+    }
+  </script>
+
+</body>
+</html>

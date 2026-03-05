@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>European Air & Missile Defence — Systems by Altitude × Range</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0e14; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    const systems = [
+      { name: "Skyranger 30", maker: "Rheinmetall", range: 4, altitude: 3, sovereignty: "european", layer: "V/SHORAD", status: "fielded", notes: "Gun + DefendAir missiles" },
+      { name: "Mistral 3", maker: "MBDA", range: 8, altitude: 5, sovereignty: "european", layer: "V/SHORAD", status: "fielded", notes: "MANPADS, 30+ export customers" },
+      { name: "Starstreak", maker: "Thales UK", range: 7, altitude: 5, sovereignty: "european", layer: "V/SHORAD", status: "fielded", notes: "Mach 3.5, laser beam-riding" },
+      { name: "RBS 70 NG", maker: "Saab", range: 9, altitude: 5, sovereignty: "european", layer: "V/SHORAD", status: "fielded", notes: "Bolide missile, 19 countries" },
+      { name: "IRIS-T SLS", maker: "Diehl", range: 12, altitude: 6, sovereignty: "european", layer: "SHORAD", status: "fielded", notes: "Ground-launched A2A variant" },
+      { name: "CAMM / Sky Sabre", maker: "MBDA UK", range: 25, altitude: 10, sovereignty: "european", layer: "SHORAD", status: "fielded", notes: "Poland Pilica+ £1.9bn" },
+      { name: "VL MICA NG", maker: "MBDA FR", range: 40, altitude: 12, sovereignty: "european", layer: "SHORAD/MRAD", status: "fielded", notes: "Replacing Crotale NG" },
+      { name: "NASAMS (AMRAAM)", maker: "Kongsberg/RTX", range: 25, altitude: 16, sovereignty: "us_dependent", layer: "SHORAD", status: "fielded", notes: "US AMRAAM interceptor, ITAR" },
+      { name: "IRIS-T SLM", maker: "Diehl", range: 40, altitude: 20, sovereignty: "european", layer: "MRAD", status: "fielded", notes: "ESSI backbone, 8+ nations" },
+      { name: "CAMM-ER", maker: "MBDA UK/IT", range: 45, altitude: 15, sovereignty: "european", layer: "MRAD", status: "fielded", notes: "Extended-range CAMM" },
+      { name: "NASAMS (AMRAAM-ER)", maker: "Kongsberg/RTX", range: 50, altitude: 21, sovereignty: "us_dependent", layer: "MRAD", status: "fielded", notes: "US AMRAAM-ER, ITAR" },
+      { name: "SAMP/T (Aster 30 B1)", maker: "Eurosam", range: 120, altitude: 20, sovereignty: "european", layer: "LRAD", status: "fielded", notes: "Current generation" },
+      { name: "SAMP/T NG (Aster B1NT)", maker: "Eurosam", range: 150, altitude: 25, sovereignty: "european", layer: "LRAD/BMD", status: "qualifying", notes: "Europe's sovereign BMD, Ka-band seeker" },
+      { name: "IRIS-T SLX", maker: "Diehl", range: 90, altitude: 30, sovereignty: "european", layer: "LRAD", status: "development", notes: "Dual IR+RF seeker, POC ~2029" },
+      { name: "Patriot PAC-3 MSE", maker: "Lockheed/RTX", range: 160, altitude: 35, sovereignty: "us_controlled", layer: "LRAD/BMD", status: "fielded", notes: "Hit-to-kill, ~$4-5m/missile" },
+      { name: "David's Sling", maker: "Rafael/RTX", range: 300, altitude: 50, sovereignty: "israeli_us", layer: "BMD", status: "fielded", notes: "Finland only European buyer" },
+      { name: "THAAD", maker: "Lockheed", range: 200, altitude: 150, sovereignty: "us_controlled", layer: "BMD", status: "fielded", notes: "No European orders, rotational only" },
+      { name: "Arrow 3", maker: "IAI/Boeing", range: 2400, altitude: 100, sovereignty: "israeli_us", layer: "BMD (exo)", status: "fielded", notes: "Germany ~$7bn, exo-atmospheric" },
+      { name: "Aegis SM-3 Blk IIA", maker: "RTX/Lockheed", range: 2500, altitude: 500, sovereignty: "us_controlled", layer: "BMD (exo)", status: "fielded", notes: "Aegis Ashore Romania + Poland" },
+      { name: "TWISTER / HYDEF", maker: "Diehl-led", range: 500, altitude: 80, sovereignty: "european", layer: "BMD (future)", status: "concept", notes: "EDF €110m, IOC ~2035" },
+      { name: "TWISTER / HYDIS", maker: "MBDA-led", range: 500, altitude: 80, sovereignty: "european", layer: "BMD (future)", status: "concept", notes: "Aquila concept, IOC ~2035" },
+    ];
+
+    const sovereigntyConfig = {
+      european: { color: "#1a6b3c", label: "European sovereign", bg: "#e8f5ec" },
+      us_dependent: { color: "#b8860b", label: "US missile dependency", bg: "#fdf5e0" },
+      us_controlled: { color: "#c0392b", label: "US controlled", bg: "#fde8e6" },
+      israeli_us: { color: "#8e44ad", label: "Israeli / US", bg: "#f3e8fa" },
+    };
+
+    const statusConfig = {
+      fielded: { symbol: "●", label: "Fielded" },
+      qualifying: { symbol: "◐", label: "Qualifying" },
+      development: { symbol: "○", label: "In development" },
+      concept: { symbol: "◇", label: "Concept phase" },
+    };
+
+    const logScale = (val, minVal, maxVal, minPx, maxPx) => {
+      const logMin = Math.log10(Math.max(minVal, 0.5));
+      const logMax = Math.log10(maxVal);
+      const logVal = Math.log10(Math.max(val, 0.5));
+      return minPx + ((logVal - logMin) / (logMax - logMin)) * (maxPx - minPx);
+    };
+
+    const Chart = ({ hoveredSystem, setHoveredSystem, activeFilters, makerFilters }) => {
+      const W = 820, H = 520;
+      const pad = { top: 40, right: 30, bottom: 60, left: 70 };
+      const plotW = W - pad.left - pad.right;
+      const plotH = H - pad.top - pad.bottom;
+      const rangeMin = 2, rangeMax = 4000;
+      const altMin = 1, altMax = 800;
+      const rangeTicks = [2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500];
+      const altTicks = [1, 2, 5, 10, 25, 50, 100, 250, 500];
+      const x = (v) => logScale(v, rangeMin, rangeMax, pad.left, pad.left + plotW);
+      const y = (v) => logScale(v, altMin, altMax, pad.top + plotH, pad.top);
+
+      const filtered = systems.filter(s => {
+        if (activeFilters.length > 0 && !activeFilters.includes(s.sovereignty)) return false;
+        if (makerFilters.length > 0 && !makerFilters.includes(s.maker)) return false;
+        return true;
+      });
+
+      return (
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: 820, background: "#0d1117", borderRadius: 8 }}>
+          {rangeTicks.map(t => (
+            <line key={`rx${t}`} x1={x(t)} x2={x(t)} y1={pad.top} y2={pad.top + plotH} stroke="#1e2733" strokeWidth={0.5} />
+          ))}
+          {altTicks.map(t => (
+            <line key={`ay${t}`} x1={pad.left} x2={pad.left + plotW} y1={y(t)} y2={y(t)} stroke="#1e2733" strokeWidth={0.5} />
+          ))}
+          <rect x={pad.left} y={y(150)} width={plotW} height={y(30) - y(150)} fill="#c0392b" opacity={0.06} rx={4} />
+          <text x={pad.left + plotW / 2} y={y(70)} textAnchor="middle" fill="#c0392b" opacity={0.4} fontSize={10} fontFamily="'IBM Plex Mono', monospace" fontWeight={600}>
+            EUROPEAN SOVEREIGNTY GAP (~30–150 km alt)
+          </text>
+          <line x1={pad.left} x2={pad.left + plotW} y1={pad.top + plotH} y2={pad.top + plotH} stroke="#3d4f5f" />
+          <line x1={pad.left} x2={pad.left} y1={pad.top} y2={pad.top + plotH} stroke="#3d4f5f" />
+          {rangeTicks.map(t => (
+            <text key={`rl${t}`} x={x(t)} y={pad.top + plotH + 18} textAnchor="middle" fill="#7a8b9a" fontSize={9} fontFamily="'IBM Plex Mono', monospace">
+              {t >= 1000 ? `${t / 1000}k` : t}
+            </text>
+          ))}
+          {altTicks.map(t => (
+            <text key={`al${t}`} x={pad.left - 10} y={y(t) + 3} textAnchor="end" fill="#7a8b9a" fontSize={9} fontFamily="'IBM Plex Mono', monospace">
+              {t}
+            </text>
+          ))}
+          <text x={pad.left + plotW / 2} y={H - 6} textAnchor="middle" fill="#9aa8b5" fontSize={11} fontFamily="'IBM Plex Mono', monospace" fontWeight={600}>RANGE (km) →</text>
+          <text transform={`rotate(-90, 14, ${pad.top + plotH / 2})`} x={14} y={pad.top + plotH / 2} textAnchor="middle" fill="#9aa8b5" fontSize={11} fontFamily="'IBM Plex Mono', monospace" fontWeight={600}>ALTITUDE (km) →</text>
+          {filtered.map((s) => {
+            const cx = x(s.range);
+            const cy = y(s.altitude);
+            const cfg = sovereigntyConfig[s.sovereignty];
+            const isHovered = hoveredSystem === s.name;
+            const isDimmed = hoveredSystem && hoveredSystem !== s.name;
+            const isConceptOrDev = s.status === "concept" || s.status === "development";
+            return (
+              <g key={s.name} style={{ cursor: "pointer" }} onMouseEnter={() => setHoveredSystem(s.name)} onMouseLeave={() => setHoveredSystem(null)}>
+                {isHovered && <circle cx={cx} cy={cy} r={16} fill={cfg.color} opacity={0.15} />}
+                <circle cx={cx} cy={cy} r={isHovered ? 7 : 5} fill={isConceptOrDev ? "none" : cfg.color} stroke={cfg.color} strokeWidth={isConceptOrDev ? 2 : 0} strokeDasharray={s.status === "concept" ? "3,2" : "none"} opacity={isDimmed ? 0.2 : 0.9} />
+                <text x={cx + 9} y={cy - 7} fill={isHovered ? "#f0f4f8" : isDimmed ? "#1e2733" : "#8a97a4"} fontSize={isHovered ? 10 : 7.5} fontFamily="'IBM Plex Mono', monospace" fontWeight={isHovered ? 700 : 400} style={{ transition: "fill 0.15s", pointerEvents: "none" }}>
+                  {s.name}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      );
+    };
+
+    function AirDefenceMap() {
+      const [hoveredSystem, setHoveredSystem] = useState(null);
+      const [activeFilters, setActiveFilters] = useState([]);
+      const [makerFilters, setMakerFilters] = useState([]);
+      const [sortCol, setSortCol] = useState("altitude");
+      const [sortDir, setSortDir] = useState("desc");
+      const [showTable, setShowTable] = useState(true);
+
+      const allMakers = useMemo(() => [...new Set(systems.map(s => s.maker))].sort(), []);
+      const makerColors = useMemo(() => {
+        const palette = ["#4fc1e9","#ed5565","#a0d468","#fc6e51","#ac92ec","#ffce54","#48cfad","#ec87c0","#5d9cec","#ccd1d9","#656d78","#e8ce4d"];
+        const map = {};
+        allMakers.forEach((m, i) => { map[m] = palette[i % palette.length]; });
+        return map;
+      }, [allMakers]);
+
+      const toggleFilter = (key) => setActiveFilters(prev => prev.includes(key) ? prev.filter(f => f !== key) : [...prev, key]);
+      const toggleMaker = (maker) => setMakerFilters(prev => prev.includes(maker) ? prev.filter(f => f !== maker) : [...prev, maker]);
+
+      const sorted = useMemo(() => {
+        let filtered = [...systems];
+        if (activeFilters.length > 0) filtered = filtered.filter(s => activeFilters.includes(s.sovereignty));
+        if (makerFilters.length > 0) filtered = filtered.filter(s => makerFilters.includes(s.maker));
+        return filtered.sort((a, b) => {
+          const va = a[sortCol], vb = b[sortCol];
+          if (typeof va === "number") return sortDir === "asc" ? va - vb : vb - va;
+          return sortDir === "asc" ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+        });
+      }, [activeFilters, makerFilters, sortCol, sortDir]);
+
+      const handleSort = (col) => {
+        if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
+        else { setSortCol(col); setSortDir("desc"); }
+      };
+
+      const hovered = systems.find(s => s.name === hoveredSystem);
+
+      return (
+        <div style={{ background: "#0a0e14", minHeight: "100vh", color: "#c8d2dc", fontFamily: "'IBM Plex Mono', 'SF Mono', 'Fira Code', monospace", padding: "24px 20px" }}>
+          <div style={{ maxWidth: 880, margin: "0 auto" }}>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 10, color: "#5a6a78", letterSpacing: 3, textTransform: "uppercase", marginBottom: 6 }}>European Air & Missile Defence</div>
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: "#e8edf2", margin: 0, lineHeight: 1.3 }}>Systems by Altitude × Range</h1>
+              <div style={{ fontSize: 11, color: "#5a6a78", marginTop: 6 }}>Log scale both axes · Hollow = in development/concept · Colour = sovereignty status</div>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 9, color: "#3d4f5f", marginBottom: 4, textTransform: "uppercase", letterSpacing: 1.5 }}>Sovereignty</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {Object.entries(sovereigntyConfig).map(([key, cfg]) => {
+                  const active = activeFilters.length === 0 || activeFilters.includes(key);
+                  return (
+                    <button key={key} onClick={() => toggleFilter(key)} style={{ background: active ? cfg.color + "22" : "transparent", border: `1px solid ${active ? cfg.color : "#2a3544"}`, color: active ? cfg.color : "#4a5a68", borderRadius: 4, padding: "4px 10px", fontSize: 10, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, transition: "all 0.15s" }}>
+                      <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: cfg.color, marginRight: 6, opacity: active ? 1 : 0.3 }} />
+                      {cfg.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 9, color: "#3d4f5f", marginBottom: 4, textTransform: "uppercase", letterSpacing: 1.5 }}>Manufacturer</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                {allMakers.map(maker => {
+                  const active = makerFilters.length === 0 || makerFilters.includes(maker);
+                  const col = makerColors[maker];
+                  return (
+                    <button key={maker} onClick={() => toggleMaker(maker)} style={{ background: active ? col + "18" : "transparent", border: `1px solid ${active ? col + "66" : "#1e2733"}`, color: active ? col : "#3d4f5f", borderRadius: 4, padding: "3px 8px", fontSize: 9, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, transition: "all 0.15s" }}>
+                      {maker}
+                    </button>
+                  );
+                })}
+                {makerFilters.length > 0 && (
+                  <button onClick={() => setMakerFilters([])} style={{ background: "transparent", border: "1px solid #2a3544", color: "#5a6a78", borderRadius: 4, padding: "3px 8px", fontSize: 9, cursor: "pointer", fontFamily: "inherit", fontWeight: 400, fontStyle: "italic" }}>clear</button>
+                )}
+              </div>
+            </div>
+
+            <div style={{ background: "#0d1117", borderRadius: 8, border: "1px solid #1e2733", marginBottom: 8 }}>
+              <Chart hoveredSystem={hoveredSystem} setHoveredSystem={setHoveredSystem} activeFilters={activeFilters} makerFilters={makerFilters} />
+            </div>
+
+            <div style={{ minHeight: 36, padding: "8px 12px", marginBottom: 20, background: hovered ? sovereigntyConfig[hovered.sovereignty].color + "12" : "transparent", borderRadius: 6, transition: "all 0.2s", border: hovered ? `1px solid ${sovereigntyConfig[hovered.sovereignty].color}33` : "1px solid transparent" }}>
+              {hovered ? (
+                <div style={{ fontSize: 11 }}>
+                  <span style={{ fontWeight: 700, color: "#e8edf2" }}>{hovered.name}</span>
+                  <span style={{ color: "#5a6a78" }}> · {hovered.maker} · </span>
+                  <span style={{ color: sovereigntyConfig[hovered.sovereignty].color }}>{sovereigntyConfig[hovered.sovereignty].label}</span>
+                  <span style={{ color: "#5a6a78" }}> · {hovered.range} km range · {hovered.altitude} km alt · </span>
+                  <span style={{ color: "#7a8b9a" }}>{hovered.notes}</span>
+                </div>
+              ) : (
+                <div style={{ fontSize: 10, color: "#3d4f5f" }}>Hover over a point for details</div>
+              )}
+            </div>
+
+            <button onClick={() => setShowTable(t => !t)} style={{ background: "transparent", border: "1px solid #1e2733", color: "#7a8b9a", borderRadius: 4, padding: "6px 14px", fontSize: 10, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, marginBottom: 12 }}>
+              {showTable ? "Hide" : "Show"} reference table
+            </button>
+
+            {showTable && (
+              <div style={{ overflowX: "auto", borderRadius: 8, border: "1px solid #1e2733" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10 }}>
+                  <thead>
+                    <tr style={{ background: "#111820" }}>
+                      {[
+                        { key: "name", label: "System" },
+                        { key: "maker", label: "Manufacturer" },
+                        { key: "range", label: "Range (km)" },
+                        { key: "altitude", label: "Alt (km)" },
+                        { key: "layer", label: "Layer" },
+                        { key: "sovereignty", label: "Sovereignty" },
+                        { key: "status", label: "Status" },
+                        { key: "notes", label: "Notes" },
+                      ].map(col => (
+                        <th key={col.key} onClick={() => handleSort(col.key)} style={{ padding: "8px 8px", textAlign: "left", cursor: "pointer", color: sortCol === col.key ? "#e8edf2" : "#5a6a78", fontWeight: 600, borderBottom: "1px solid #1e2733", whiteSpace: "nowrap", userSelect: "none" }}>
+                          {col.label} {sortCol === col.key ? (sortDir === "asc" ? "↑" : "↓") : ""}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sorted.map((s, i) => {
+                      const cfg = sovereigntyConfig[s.sovereignty];
+                      const st = statusConfig[s.status];
+                      const isHov = hoveredSystem === s.name;
+                      return (
+                        <tr key={s.name} onMouseEnter={() => setHoveredSystem(s.name)} onMouseLeave={() => setHoveredSystem(null)} style={{ background: isHov ? cfg.color + "12" : i % 2 === 0 ? "#0d1117" : "#0f1419", transition: "background 0.1s" }}>
+                          <td style={{ padding: "6px 8px", fontWeight: 600, color: "#d0d8e0", borderBottom: "1px solid #151d27" }}>{s.name}</td>
+                          <td style={{ padding: "6px 8px", color: "#7a8b9a", borderBottom: "1px solid #151d27" }}>{s.maker}</td>
+                          <td style={{ padding: "6px 8px", color: "#d0d8e0", borderBottom: "1px solid #151d27", textAlign: "right" }}>{s.range.toLocaleString()}</td>
+                          <td style={{ padding: "6px 8px", color: "#d0d8e0", borderBottom: "1px solid #151d27", textAlign: "right" }}>{s.altitude}</td>
+                          <td style={{ padding: "6px 8px", color: "#7a8b9a", borderBottom: "1px solid #151d27", whiteSpace: "nowrap" }}>{s.layer}</td>
+                          <td style={{ padding: "6px 8px", borderBottom: "1px solid #151d27" }}>
+                            <span style={{ display: "inline-block", padding: "2px 6px", borderRadius: 3, background: cfg.color + "18", color: cfg.color, fontSize: 9, fontWeight: 600 }}>{cfg.label}</span>
+                          </td>
+                          <td style={{ padding: "6px 8px", color: "#7a8b9a", borderBottom: "1px solid #151d27", whiteSpace: "nowrap" }}><span style={{ marginRight: 4 }}>{st.symbol}</span>{st.label}</td>
+                          <td style={{ padding: "6px 8px", color: "#5a6a78", borderBottom: "1px solid #151d27", maxWidth: 200 }}>{s.notes}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div style={{ marginTop: 20, padding: "12px 16px", borderRadius: 6, background: "#111820", border: "1px solid #1e2733", fontSize: 10, color: "#5a6a78", lineHeight: 1.6 }}>
+              <span style={{ color: "#1a6b3c", fontWeight: 700 }}>●</span> SAFE Cat 2 eligible &nbsp;
+              <span style={{ color: "#b8860b", fontWeight: 700 }}>●</span> US interceptor dependency &nbsp;
+              <span style={{ color: "#c0392b", fontWeight: 700 }}>●</span> US design authority / ITAR &nbsp;
+              <span style={{ color: "#8e44ad", fontWeight: 700 }}>●</span> Israeli/US co-developed &nbsp;&nbsp;|&nbsp;&nbsp;
+              {Object.entries(statusConfig).map(([k, v]) => (
+                <span key={k} style={{ marginRight: 10 }}>{v.symbol} {v.label}</span>
+              ))}
+              <br />
+              <span style={{ color: "#c0392b" }}>Shaded zone</span> = 30–150 km altitude band with no European sovereign system until TWISTER ~2035
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<AirDefenceMap />);
+  </script>
+</body>
+</html>
