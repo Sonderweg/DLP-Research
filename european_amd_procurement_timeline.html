@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>European Air & Missile Defence — Procurement Timeline</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e14; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+// Orders dataset: date is approximate contract/selection/order date
+const orders = [
+  // Pre-2022 legacy (shown for context)
+  { date: "2005-01", country: "Netherlands", system: "Patriot", layer: "LRAD", sovereignty: "us_controlled", value: null, detail: "In service, 4 systems" },
+  { date: "2006-01", country: "Germany", system: "Patriot", layer: "LRAD", sovereignty: "us_controlled", value: null, detail: "In service, 17 systems / 136 launchers" },
+  { date: "2008-01", country: "Greece", system: "Patriot", layer: "LRAD", sovereignty: "us_controlled", value: null, detail: "In service, 4+ systems" },
+  { date: "2010-01", country: "Spain", system: "Patriot", layer: "LRAD", sovereignty: "us_controlled", value: null, detail: "In service" },
+  { date: "2010-01", country: "Spain", system: "NASAMS", layer: "SHORAD", sovereignty: "us_dependent", value: null, detail: "In service" },
+  { date: "2012-01", country: "Norway", system: "NASAMS", layer: "SHORAD", sovereignty: "us_dependent", value: null, detail: "Legacy systems in service" },
+  { date: "2012-01", country: "Finland", system: "NASAMS", layer: "SHORAD", sovereignty: "us_dependent", value: null, detail: "Legacy systems in service" },
+  { date: "2012-01", country: "Hungary", system: "NASAMS", layer: "SHORAD", sovereignty: "us_dependent", value: null, detail: "In service" },
+  { date: "2016-05", country: "Romania", system: "Aegis Ashore", layer: "BMD", sovereignty: "us_controlled", value: null, detail: "Deveselu operational (US-operated)" },
+  { date: "2017-03", country: "Romania", system: "Patriot", layer: "LRAD", sovereignty: "us_controlled", value: 3900, detail: "7 systems, 28 launchers" },
+  { date: "2018-02", country: "Sweden", system: "Patriot", layer: "LRAD", sovereignty: "us_controlled", value: 3200, detail: "4 systems" },
+  { date: "2018-03", country: "Poland", system: "Patriot", layer: "LRAD", sovereignty: "us_controlled", value: 4750, detail: "Phase 1: 2 systems" },
+  // Post-Ukraine invasion acceleration (2022+)
+  { date: "2022-10", country: "Germany", system: "IRIS-T SLM", layer: "MRAD", sovereignty: "european", value: 950, detail: "6 fire units, planning 50 total" },
+  { date: "2022-10", country: "Germany", system: "Skyranger 30", layer: "V/SHORAD", sovereignty: "european", value: 595, detail: "19 units ordered" },
+  { date: "2022-12", country: "Estonia", system: "IRIS-T SLM", layer: "MRAD", sovereignty: "european", value: 500, detail: "Part of ~€1bn combined order with Latvia" },
+  { date: "2022-12", country: "Latvia", system: "IRIS-T SLM", layer: "MRAD", sovereignty: "european", value: 500, detail: "Part of ~€1bn combined order with Estonia" },
+  { date: "2023-04", country: "Finland", system: "David's Sling", layer: "BMD", sovereignty: "israeli_us", value: 316, detail: "€316m, FOC by 2030" },
+  { date: "2023-06", country: "Poland", system: "Patriot", layer: "LRAD", sovereignty: "us_controlled", value: 15000, detail: "Phase 2: 6 more systems, 852 PAC-3 MSE" },
+  { date: "2023-06", country: "Poland", system: "CAMM / Sky Sabre", layer: "SHORAD", sovereignty: "european", value: 2500, detail: "Pilica+ £1.9bn, 22 batteries, 750 missiles" },
+  { date: "2023-09", country: "Germany", system: "Arrow 3", layer: "BMD", sovereignty: "israeli_us", value: 3500, detail: "First contract ~$3.5bn" },
+  { date: "2023-10", country: "Austria", system: "Skyranger 30", layer: "V/SHORAD", sovereignty: "european", value: null, detail: "36 units ordered" },
+  { date: "2023-11", country: "Netherlands", system: "Skyranger 30", layer: "V/SHORAD", sovereignty: "european", value: null, detail: "22 units ordered" },
+  { date: "2024-01", country: "France", system: "VL MICA NG", layer: "SHORAD", sovereignty: "european", value: null, detail: "12 systems under LPM (first 2 delivered Jun 2024)" },
+  { date: "2024-02", country: "France", system: "SAMP/T NG", layer: "LRAD", sovereignty: "european", value: null, detail: "8 systems ordered under LPM" },
+  { date: "2024-04", country: "Germany", system: "PAC-2 GEM-T", layer: "LRAD", sovereignty: "us_controlled", value: null, detail: "1,000 missiles (consortium: DE/RO/ES/NL)" },
+  { date: "2024-06", country: "Sweden", system: "IRIS-T SLM", layer: "MRAD", sovereignty: "european", value: 1100, detail: "7 fire units" },
+  { date: "2024-06", country: "Sweden", system: "IRIS-T SLS", layer: "SHORAD", sovereignty: "european", value: null, detail: "4 SLS platoons (RBS 98)" },
+  { date: "2024-07", country: "Poland", system: "Aegis Ashore", layer: "BMD", sovereignty: "us_controlled", value: null, detail: "Redzikowo operational Jul 2024 (US-operated)" },
+  { date: "2024-10", country: "Bulgaria", system: "IRIS-T SLM", layer: "MRAD", sovereignty: "european", value: 182, detail: "1 unit + options for 6 more + 1 SLX" },
+  { date: "2024-10", country: "Italy", system: "CAMM-ER", layer: "MRAD", sovereignty: "european", value: null, detail: "Selected for army GBAD" },
+  { date: "2024-11", country: "Norway", system: "NASAMS", layer: "SHORAD", sovereignty: "us_dependent", value: 450, detail: "4 new batteries (NOK 4.8bn)" },
+  { date: "2024-12", country: "Slovenia", system: "IRIS-T SLM", layer: "MRAD", sovereignty: "european", value: 200, detail: "3 fire units" },
+  { date: "2025-01", country: "Italy", system: "SAMP/T NG", layer: "LRAD", sovereignty: "european", value: null, detail: "First system received Jan 2026" },
+  { date: "2025-06", country: "Belgium", system: "NASAMS", layer: "SHORAD", sovereignty: "us_dependent", value: 2500, detail: "10 batteries" },
+  { date: "2025-06", country: "Belgium", system: "Skyranger 30", layer: "V/SHORAD", sovereignty: "european", value: null, detail: "Selected for VSHORAD" },
+  { date: "2025-07", country: "Denmark", system: "VL MICA NG", layer: "SHORAD", sovereignty: "european", value: null, detail: "2 fire units" },
+  { date: "2025-07", country: "Denmark", system: "IRIS-T SLM", layer: "MRAD", sovereignty: "european", value: null, detail: "1+ fire units ordered" },
+  { date: "2025-07", country: "Switzerland", system: "IRIS-T SLM", layer: "MRAD", sovereignty: "european", value: 525, detail: "5 fire units (CHF 500m)" },
+  { date: "2025-08", country: "UK", system: "CAMM / Sky Sabre", layer: "SHORAD", sovereignty: "european", value: 155, detail: "6 additional launchers (£118m)" },
+  { date: "2025-08", country: "Denmark", system: "Patriot", layer: "LRAD", sovereignty: "us_controlled", value: 8500, detail: "$8.5bn DSCA approval — Pentagon then blocked" },
+  { date: "2025-09", country: "Denmark", system: "SAMP/T NG", layer: "LRAD", sovereignty: "european", value: null, detail: "Selected over Patriot" },
+  { date: "2025-11", country: "Germany", system: "DefendAir", layer: "V/SHORAD", sovereignty: "european", value: null, detail: "Approved for Skyranger integration" },
+  { date: "2025-12", country: "Germany", system: "Arrow 3", layer: "BMD", sovereignty: "israeli_us", value: 3100, detail: "Expansion contract ~€3.1bn" },
+  { date: "2025-12", country: "Sweden", system: "IRIS-T SLS", layer: "SHORAD", sovereignty: "european", value: null, detail: "Follow-on order Dec 2025" },
+  { date: "2025-12", country: "Denmark", system: "IRIS-T SLM", layer: "MRAD", sovereignty: "european", value: null, detail: "Additional permanent units" },
+];
+
+const sovereigntyConfig = {
+  european: { color: "#22c55e", label: "European sovereign", bg: "#22c55e" },
+  us_dependent: { color: "#eab308", label: "US missile dependency", bg: "#eab308" },
+  us_controlled: { color: "#ef4444", label: "US controlled", bg: "#ef4444" },
+  israeli_us: { color: "#a855f7", label: "Israeli / US", bg: "#a855f7" },
+};
+
+const layerOrder = ["V/SHORAD", "SHORAD", "MRAD", "LRAD", "BMD"];
+const layerY = { "V/SHORAD": 0, "SHORAD": 1, "MRAD": 2, "LRAD": 3, "BMD": 4 };
+
+const parseDate = (d) => {
+  const [y, m] = d.split("-").map(Number);
+  return new Date(y, m - 1, 1);
+};
+
+const yearFrac = (d) => {
+  const dt = parseDate(d);
+  return dt.getFullYear() + dt.getMonth() / 12;
+};
+
+const ProcurementTimeline = function() {
+  const [hoveredOrder, setHoveredOrder] = useState(null);
+  const [filterSovereignty, setFilterSovereignty] = useState("all");
+  const [filterLayer, setFilterLayer] = useState("all");
+  const [startYear, setStartYear] = useState(2017);
+  const [showBlocked, setShowBlocked] = useState(true);
+
+  const filtered = useMemo(() => {
+    return orders.filter(o => {
+      const yr = yearFrac(o.date);
+      if (yr < startYear) return false;
+      if (filterSovereignty !== "all" && o.sovereignty !== filterSovereignty) return false;
+      if (filterLayer !== "all" && o.layer !== filterLayer) return false;
+      if (!showBlocked && o.detail && o.detail.includes("blocked")) return false;
+      return true;
+    });
+  }, [filterSovereignty, filterLayer, startYear, showBlocked]);
+
+  // Aggregate stats by year
+  const yearlyStats = useMemo(() => {
+    const years = {};
+    for (let y = startYear; y <= 2025; y++) years[y] = { european: 0, non_european: 0, total: 0 };
+    orders.forEach(o => {
+      const yr = Math.floor(yearFrac(o.date));
+      if (yr < startYear || yr > 2025) return;
+      if (!years[yr]) return;
+      years[yr].total++;
+      if (o.sovereignty === "european") years[yr].european++;
+      else years[yr].non_european++;
+    });
+    return years;
+  }, [startYear]);
+
+  const W = 860, H = 380;
+  const pad = { top: 30, right: 20, bottom: 50, left: 80 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+
+  const minYear = startYear;
+  const maxYear = 2026.2;
+  const xScale = (yf) => pad.left + ((yf - minYear) / (maxYear - minYear)) * plotW;
+  const yScale = (layerIdx) => pad.top + (layerIdx / (layerOrder.length - 1)) * plotH;
+
+  const yearTicks = [];
+  for (let y = minYear; y <= 2026; y++) yearTicks.push(y);
+
+  // Jitter to avoid overlap
+  const jitteredOrders = useMemo(() => {
+    const buckets = {};
+    return filtered.map((o, i) => {
+      const key = `${o.date}-${o.layer}`;
+      buckets[key] = (buckets[key] || 0) + 1;
+      const jitter = (buckets[key] - 1) * 12 - 6;
+      return { ...o, jitterY: jitter, idx: i };
+    });
+  }, [filtered]);
+
+  const hovered = hoveredOrder !== null ? jitteredOrders[hoveredOrder] : null;
+
+  return (
+    <div style={{ background: "#0a0e14", minHeight: "100vh", color: "#c8d2dc", fontFamily: "'IBM Plex Mono', 'SF Mono', 'Fira Code', monospace", padding: "24px 20px" }}>
+      <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+      <div style={{ maxWidth: 920, margin: "0 auto" }}>
+        {/* Header */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 10, color: "#5a6a78", letterSpacing: 3, textTransform: "uppercase", marginBottom: 6 }}>European Air & Missile Defence</div>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#e8edf2", margin: 0, lineHeight: 1.3 }}>
+            Procurement Timeline — Are Preferences Shifting?
+          </h1>
+          <div style={{ fontSize: 11, color: "#5a6a78", marginTop: 6 }}>
+            Each dot = one procurement decision · Y-axis = defence layer · Colour = sovereignty status
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 9, color: "#3d4f5f", marginBottom: 4, textTransform: "uppercase", letterSpacing: 1.5 }}>Sovereignty</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              <button onClick={() => setFilterSovereignty("all")}
+                style={{ background: filterSovereignty === "all" ? "#1e2733" : "transparent", border: `1px solid ${filterSovereignty === "all" ? "#3d4f5f" : "#1e2733"}`, color: filterSovereignty === "all" ? "#e8edf2" : "#4a5a68", borderRadius: 4, padding: "3px 8px", fontSize: 9, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>All</button>
+              {Object.entries(sovereigntyConfig).map(([key, cfg]) => (
+                <button key={key} onClick={() => setFilterSovereignty(key)}
+                  style={{ background: filterSovereignty === key ? cfg.color + "22" : "transparent", border: `1px solid ${filterSovereignty === key ? cfg.color : "#1e2733"}`, color: filterSovereignty === key ? cfg.color : "#4a5a68", borderRadius: 4, padding: "3px 8px", fontSize: 9, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>
+                  {cfg.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 9, color: "#3d4f5f", marginBottom: 4, textTransform: "uppercase", letterSpacing: 1.5 }}>Layer</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              <button onClick={() => setFilterLayer("all")}
+                style={{ background: filterLayer === "all" ? "#1e2733" : "transparent", border: `1px solid ${filterLayer === "all" ? "#3d4f5f" : "#1e2733"}`, color: filterLayer === "all" ? "#e8edf2" : "#4a5a68", borderRadius: 4, padding: "3px 8px", fontSize: 9, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>All</button>
+              {layerOrder.map(l => (
+                <button key={l} onClick={() => setFilterLayer(l)}
+                  style={{ background: filterLayer === l ? "#1e2733" : "transparent", border: `1px solid ${filterLayer === l ? "#3d4f5f" : "#1e2733"}`, color: filterLayer === l ? "#e8edf2" : "#4a5a68", borderRadius: 4, padding: "3px 8px", fontSize: 9, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>{l}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 9, color: "#3d4f5f", marginBottom: 4, textTransform: "uppercase", letterSpacing: 1.5 }}>Start year</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {[2005, 2017, 2022, 2024].map(y => (
+                <button key={y} onClick={() => setStartYear(y)}
+                  style={{ background: startYear === y ? "#1e2733" : "transparent", border: `1px solid ${startYear === y ? "#3d4f5f" : "#1e2733"}`, color: startYear === y ? "#e8edf2" : "#4a5a68", borderRadius: 4, padding: "3px 8px", fontSize: 9, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>{y}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Timeline chart */}
+        <div style={{ background: "#0d1117", borderRadius: 8, border: "1px solid #1e2733", marginBottom: 8 }}>
+          <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: W }}>
+            {/* Feb 2022 invasion marker */}
+            {startYear <= 2022 && (
+              <>
+                <line x1={xScale(2022.17)} x2={xScale(2022.17)} y1={pad.top - 10} y2={pad.top + plotH + 5} stroke="#ef4444" strokeWidth={1} strokeDasharray="4,3" opacity={0.5} />
+                <text x={xScale(2022.17) + 4} y={pad.top - 2} fill="#ef4444" fontSize={8} fontFamily="'IBM Plex Mono', monospace" opacity={0.7}>RU invades UA</text>
+              </>
+            )}
+
+            {/* Sep 2025 Pentagon blocks */}
+            <line x1={xScale(2025.67)} x2={xScale(2025.67)} y1={pad.top - 10} y2={pad.top + plotH + 5} stroke="#ef4444" strokeWidth={1} strokeDasharray="2,3" opacity={0.3} />
+            <text x={xScale(2025.67) + 4} y={pad.top - 2} fill="#ef4444" fontSize={7} fontFamily="'IBM Plex Mono', monospace" opacity={0.5}>Pentagon blocks Patriot sales</text>
+
+            {/* Grid - years */}
+            {yearTicks.map(y => (
+              <g key={y}>
+                <line x1={xScale(y)} x2={xScale(y)} y1={pad.top} y2={pad.top + plotH} stroke="#1e2733" strokeWidth={0.5} />
+                <text x={xScale(y)} y={H - 10} textAnchor="middle" fill="#5a6a78" fontSize={9} fontFamily="'IBM Plex Mono', monospace">{y}</text>
+              </g>
+            ))}
+
+            {/* Layer rows */}
+            {layerOrder.map((layer, i) => {
+              const ly = yScale(i);
+              return (
+                <g key={layer}>
+                  <line x1={pad.left} x2={pad.left + plotW} y1={ly} y2={ly} stroke="#1e2733" strokeWidth={0.5} />
+                  <text x={pad.left - 8} y={ly + 4} textAnchor="end" fill="#7a8b9a" fontSize={9} fontFamily="'IBM Plex Mono', monospace" fontWeight={600}>{layer}</text>
+                </g>
+              );
+            })}
+
+            {/* Data points */}
+            {jitteredOrders.map((o, i) => {
+              const yf = yearFrac(o.date);
+              const cx = xScale(yf);
+              const baseLayer = layerOrder.findIndex(l => o.layer.startsWith(l)) !== -1
+                ? layerOrder.findIndex(l => o.layer.startsWith(l))
+                : layerOrder.findIndex(l => o.layer.includes(l));
+              const ly = layerOrder.indexOf(o.layer) !== -1
+                ? layerOrder.indexOf(o.layer)
+                : o.layer === "LRAD" ? 3 : o.layer === "BMD" ? 4 : 2;
+              const cy = yScale(ly) + o.jitterY;
+              const cfg = sovereigntyConfig[o.sovereignty];
+              const isHovered = hoveredOrder === i;
+              const isDimmed = hoveredOrder !== null && hoveredOrder !== i;
+              const isBlocked = o.detail && o.detail.includes("blocked");
+              const r = o.value ? Math.max(4, Math.min(12, Math.sqrt(o.value / 80))) : 5;
+
+              return (
+                <g key={i} style={{ cursor: "pointer" }}
+                  onMouseEnter={() => setHoveredOrder(i)}
+                  onMouseLeave={() => setHoveredOrder(null)}
+                >
+                  {isHovered && <circle cx={cx} cy={cy} r={r + 8} fill={cfg.color} opacity={0.12} />}
+                  <circle
+                    cx={cx} cy={cy}
+                    r={isHovered ? r + 2 : r}
+                    fill={isBlocked ? "none" : cfg.color}
+                    stroke={cfg.color}
+                    strokeWidth={isBlocked ? 2 : 0.5}
+                    strokeDasharray={isBlocked ? "3,2" : "none"}
+                    opacity={isDimmed ? 0.15 : 0.85}
+                  />
+                  {isHovered && (
+                    <text x={cx + r + 6} y={cy + 3} fill="#e8edf2" fontSize={9} fontFamily="'IBM Plex Mono', monospace" fontWeight={700}>
+                      {o.country}: {o.system}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+
+            {/* Axis labels */}
+            <text x={pad.left + plotW / 2} y={H - 0} textAnchor="middle" fill="#5a6a78" fontSize={10} fontFamily="'IBM Plex Mono', monospace" fontWeight={600}>
+              ORDER / SELECTION DATE →
+            </text>
+          </svg>
+        </div>
+
+        {/* Hover detail */}
+        <div style={{
+          minHeight: 40, padding: "8px 12px", marginBottom: 16,
+          background: hovered ? sovereigntyConfig[hovered.sovereignty].color + "12" : "transparent",
+          borderRadius: 6, transition: "all 0.2s",
+          border: hovered ? `1px solid ${sovereigntyConfig[hovered.sovereignty].color}33` : "1px solid transparent",
+        }}>
+          {hovered ? (
+            <div style={{ fontSize: 11 }}>
+              <span style={{ fontWeight: 700, color: "#e8edf2" }}>{hovered.country}</span>
+              <span style={{ color: "#5a6a78" }}> → </span>
+              <span style={{ fontWeight: 700, color: "#e8edf2" }}>{hovered.system}</span>
+              <span style={{ color: "#5a6a78" }}> · {hovered.layer} · </span>
+              <span style={{ color: sovereigntyConfig[hovered.sovereignty].color, fontWeight: 600 }}>{sovereigntyConfig[hovered.sovereignty].label}</span>
+              {hovered.value && <span style={{ color: "#5a6a78" }}> · ~€{hovered.value >= 1000 ? (hovered.value / 1000).toFixed(1) + "bn" : hovered.value + "m"}</span>}
+              <span style={{ color: "#5a6a78" }}> · {hovered.date}</span>
+              <br />
+              <span style={{ color: "#7a8b9a", fontSize: 10 }}>{hovered.detail}</span>
+            </div>
+          ) : (
+            <div style={{ fontSize: 10, color: "#3d4f5f" }}>Hover over a dot for order details · Dot size = approximate contract value</div>
+          )}
+        </div>
+
+        {/* Annual sovereignty breakdown bar chart */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 9, color: "#3d4f5f", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1.5 }}>Orders per year — European vs non-European</div>
+          <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 100, paddingLeft: 2 }}>
+            {Object.entries(yearlyStats).map(([year, stats]) => {
+              if (stats.total === 0) return (
+                <div key={year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div style={{ height: 100 }} />
+                  <div style={{ fontSize: 8, color: "#3d4f5f", marginTop: 4, transform: "rotate(-45deg)", transformOrigin: "top left", whiteSpace: "nowrap" }}>{year}</div>
+                </div>
+              );
+              const maxH = 90;
+              const scale = maxH / Math.max(...Object.values(yearlyStats).map(s => s.total), 1);
+              const euH = stats.european * scale;
+              const nonH = stats.non_european * scale;
+              const euPct = stats.total > 0 ? Math.round((stats.european / stats.total) * 100) : 0;
+
+              return (
+                <div key={year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+                  <div style={{ fontSize: 8, color: euPct >= 50 ? "#22c55e" : "#ef4444", fontWeight: 700, marginBottom: 2 }}>
+                    {stats.total > 0 ? `${euPct}%` : ""}
+                  </div>
+                  <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 1 }}>
+                    <div style={{ height: nonH, background: "#ef4444", borderRadius: "3px 3px 0 0", opacity: 0.6, minHeight: nonH > 0 ? 3 : 0 }} />
+                    <div style={{ height: euH, background: "#22c55e", borderRadius: "0 0 3px 3px", opacity: 0.7, minHeight: euH > 0 ? 3 : 0 }} />
+                  </div>
+                  <div style={{ fontSize: 8, color: "#5a6a78", marginTop: 4 }}>{String(year).slice(2)}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 9, color: "#5a6a78" }}>
+            <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#22c55e", borderRadius: 2, marginRight: 4, opacity: 0.7 }} />European sovereign</span>
+            <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#ef4444", borderRadius: 2, marginRight: 4, opacity: 0.6 }} />Non-European (US / Israeli / US-dependent)</span>
+            <span style={{ color: "#3d4f5f" }}>% = European share of year's orders</span>
+          </div>
+        </div>
+
+        {/* Summary table */}
+        <div style={{ overflowX: "auto", borderRadius: 8, border: "1px solid #1e2733", marginBottom: 16 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 9 }}>
+            <thead>
+              <tr style={{ background: "#111820" }}>
+                <th style={{ padding: "6px 8px", textAlign: "left", color: "#5a6a78", fontWeight: 600, borderBottom: "1px solid #1e2733" }}>Date</th>
+                <th style={{ padding: "6px 8px", textAlign: "left", color: "#5a6a78", fontWeight: 600, borderBottom: "1px solid #1e2733" }}>Country</th>
+                <th style={{ padding: "6px 8px", textAlign: "left", color: "#5a6a78", fontWeight: 600, borderBottom: "1px solid #1e2733" }}>System</th>
+                <th style={{ padding: "6px 8px", textAlign: "left", color: "#5a6a78", fontWeight: 600, borderBottom: "1px solid #1e2733" }}>Layer</th>
+                <th style={{ padding: "6px 8px", textAlign: "left", color: "#5a6a78", fontWeight: 600, borderBottom: "1px solid #1e2733" }}>Sovereignty</th>
+                <th style={{ padding: "6px 8px", textAlign: "left", color: "#5a6a78", fontWeight: 600, borderBottom: "1px solid #1e2733" }}>Value (€m)</th>
+                <th style={{ padding: "6px 8px", textAlign: "left", color: "#5a6a78", fontWeight: 600, borderBottom: "1px solid #1e2733" }}>Detail</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.sort((a, b) => b.date.localeCompare(a.date)).map((o, i) => {
+                const cfg = sovereigntyConfig[o.sovereignty];
+                const isBlocked = o.detail && o.detail.includes("blocked");
+                return (
+                  <tr key={i} style={{ background: i % 2 === 0 ? "#0d1117" : "#0f1419" }}
+                    onMouseEnter={() => setHoveredOrder(jitteredOrders.findIndex(j => j.date === o.date && j.country === o.country && j.system === o.system))}
+                    onMouseLeave={() => setHoveredOrder(null)}
+                  >
+                    <td style={{ padding: "5px 8px", color: "#7a8b9a", borderBottom: "1px solid #151d27", whiteSpace: "nowrap" }}>{o.date}</td>
+                    <td style={{ padding: "5px 8px", color: "#d0d8e0", fontWeight: 600, borderBottom: "1px solid #151d27" }}>{o.country}</td>
+                    <td style={{ padding: "5px 8px", color: "#d0d8e0", borderBottom: "1px solid #151d27", textDecoration: isBlocked ? "line-through" : "none", opacity: isBlocked ? 0.5 : 1 }}>{o.system}</td>
+                    <td style={{ padding: "5px 8px", color: "#7a8b9a", borderBottom: "1px solid #151d27" }}>{o.layer}</td>
+                    <td style={{ padding: "5px 8px", borderBottom: "1px solid #151d27" }}>
+                      <span style={{ display: "inline-block", padding: "1px 5px", borderRadius: 3, background: cfg.color + "18", color: cfg.color, fontSize: 8, fontWeight: 600 }}>
+                        {cfg.label}
+                      </span>
+                    </td>
+                    <td style={{ padding: "5px 8px", color: "#d0d8e0", borderBottom: "1px solid #151d27", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                      {o.value ? (o.value >= 1000 ? `${(o.value / 1000).toFixed(1)}bn` : `${o.value}m`) : "–"}
+                    </td>
+                    <td style={{ padding: "5px 8px", color: "#5a6a78", borderBottom: "1px solid #151d27", maxWidth: 220 }}>{o.detail}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Legend / insight */}
+        <div style={{
+          padding: "12px 16px", borderRadius: 6,
+          background: "#111820", border: "1px solid #1e2733", fontSize: 10, color: "#5a6a78", lineHeight: 1.6,
+        }}>
+          <div style={{ marginBottom: 6, fontWeight: 600, color: "#7a8b9a", textTransform: "uppercase", letterSpacing: 1, fontSize: 9 }}>Key pattern</div>
+          <div>
+            Pre-2022: dominated by <span style={{ color: "#ef4444" }}>US-controlled</span> Patriot orders and <span style={{ color: "#eab308" }}>US-dependent</span> NASAMS.
+            Post-invasion: massive surge in <span style={{ color: "#22c55e" }}>European sovereign</span> orders (IRIS-T SLM, Skyranger, CAMM, SAMP/T NG) alongside continued Patriot procurement.
+            2025: the shift accelerates — Denmark selects SAMP/T NG <em>over</em> Patriot, Pentagon blocks Patriot sales, and nearly all new SHORAD/MRAD orders go European.
+            The <span style={{ color: "#a855f7" }}>Israeli/US</span> BMD layer (Arrow 3, David's Sling) remains Germany- and Finland-only.
+            Dot size reflects approximate contract value where known. Dashed outline = blocked or cancelled.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(ProcurementTimeline));
+</script>
+</body>
+</html>

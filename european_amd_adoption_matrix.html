@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>European Air & Missile Defence — Country × System Adoption Matrix</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e14; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+const countries = [
+  { name: "Germany", flag: "DE", essi: true, nato: true },
+  { name: "Poland", flag: "PL", essi: true, nato: true },
+  { name: "France", flag: "FR", essi: false, nato: true },
+  { name: "Italy", flag: "IT", essi: false, nato: true },
+  { name: "UK", flag: "GB", essi: true, nato: true },
+  { name: "Sweden", flag: "SE", essi: true, nato: true },
+  { name: "Finland", flag: "FI", essi: false, nato: true },
+  { name: "Denmark", flag: "DK", essi: true, nato: true },
+  { name: "Norway", flag: "NO", essi: true, nato: true },
+  { name: "Netherlands", flag: "NL", essi: true, nato: true },
+  { name: "Romania", flag: "RO", essi: true, nato: true },
+  { name: "Greece", flag: "GR", essi: true, nato: true },
+  { name: "Spain", flag: "ES", essi: false, nato: true },
+  { name: "Switzerland", flag: "CH", essi: true, nato: false },
+  { name: "Estonia", flag: "EE", essi: true, nato: true },
+  { name: "Latvia", flag: "LV", essi: true, nato: true },
+  { name: "Slovenia", flag: "SI", essi: true, nato: true },
+  { name: "Bulgaria", flag: "BG", essi: true, nato: true },
+  { name: "Belgium", flag: "BE", essi: true, nato: true },
+  { name: "Austria", flag: "AT", essi: true, nato: false },
+  { name: "Hungary", flag: "HU", essi: true, nato: true },
+  { name: "Czechia", flag: "CZ", essi: true, nato: true },
+];
+
+const systemsList = [
+  // V/SHORAD
+  { id: "skyranger", name: "Skyranger 30", maker: "Rheinmetall", layer: "V/SHORAD", sovereignty: "european" },
+  { id: "mistral", name: "Mistral 3", maker: "MBDA", layer: "V/SHORAD", sovereignty: "european" },
+  { id: "starstreak", name: "Starstreak/Martlet", maker: "Thales UK", layer: "V/SHORAD", sovereignty: "european" },
+  { id: "rbs70", name: "RBS 70 NG", maker: "Saab", layer: "V/SHORAD", sovereignty: "european" },
+  // SHORAD
+  { id: "irist_sls", name: "IRIS-T SLS", maker: "Diehl", layer: "SHORAD", sovereignty: "european" },
+  { id: "camm", name: "CAMM/Sky Sabre", maker: "MBDA UK", layer: "SHORAD", sovereignty: "european" },
+  { id: "vl_mica", name: "VL MICA NG", maker: "MBDA FR", layer: "SHORAD", sovereignty: "european" },
+  { id: "nasams", name: "NASAMS", maker: "Kongsberg/RTX", layer: "SHORAD/MRAD", sovereignty: "us_dependent" },
+  // MRAD
+  { id: "irist_slm", name: "IRIS-T SLM", maker: "Diehl", layer: "MRAD", sovereignty: "european" },
+  { id: "camm_er", name: "CAMM-ER", maker: "MBDA UK/IT", layer: "MRAD", sovereignty: "european" },
+  // LRAD
+  { id: "sampt", name: "SAMP/T", maker: "Eurosam", layer: "LRAD", sovereignty: "european" },
+  { id: "sampt_ng", name: "SAMP/T NG", maker: "Eurosam", layer: "LRAD/BMD", sovereignty: "european" },
+  { id: "irist_slx", name: "IRIS-T SLX", maker: "Diehl", layer: "LRAD", sovereignty: "european" },
+  { id: "patriot", name: "Patriot", maker: "Lockheed/RTX", layer: "LRAD/BMD", sovereignty: "us_controlled" },
+  // BMD
+  { id: "davids_sling", name: "David's Sling", maker: "Rafael/RTX", layer: "BMD", sovereignty: "israeli_us" },
+  { id: "arrow3", name: "Arrow 3", maker: "IAI/Boeing", layer: "BMD (exo)", sovereignty: "israeli_us" },
+  { id: "aegis", name: "Aegis Ashore", maker: "RTX/Lockheed", layer: "BMD (exo)", sovereignty: "us_controlled" },
+];
+
+// status: "ordered" = firm order, "operating" = in service, "selected" = selected/contracted, "planned" = planned/evaluating, "hosting" = hosting US system
+const adoptionData = {
+  "Germany": {
+    skyranger: { status: "ordered", detail: "19 ordered (€595m), targeting 500–600 units" },
+    mistral: { status: "ordered", detail: "DefendAir for Skyranger (9/turret)" },
+    irist_sls: { status: "planned", detail: "Via LVS NNbS programme (€1.2bn dev contract)" },
+    irist_slm: { status: "ordered", detail: "6 fire units (€950m), planning 50 total" },
+    patriot: { status: "operating", detail: "17 systems, 136 launchers" },
+    arrow3: { status: "operating", detail: "~$7bn total, first battery Dec 2025" },
+    sampt_ng: { status: "planned", detail: "Evaluating" },
+  },
+  "Poland": {
+    camm: { status: "ordered", detail: "Pilica+ £1.9bn, 22 batteries, 750 missiles" },
+    patriot: { status: "ordered", detail: "8 systems, 852 PAC-3 MSE missiles" },
+    nasams: { status: "operating", detail: "Legacy systems in service" },
+  },
+  "France": {
+    mistral: { status: "operating", detail: "In service, 30+ export customers globally" },
+    vl_mica: { status: "ordered", detail: "12 systems under 2024–2030 LPM" },
+    sampt: { status: "operating", detail: "Current SAMP/T MAMBA in service" },
+    sampt_ng: { status: "ordered", detail: "8 systems ordered under LPM" },
+  },
+  "Italy": {
+    mistral: { status: "operating", detail: "In service" },
+    camm_er: { status: "selected", detail: "Selected for army GBAD" },
+    sampt: { status: "operating", detail: "Current SAMP/T in service" },
+    sampt_ng: { status: "ordered", detail: "First system received Jan 2026" },
+  },
+  "UK": {
+    camm: { status: "operating", detail: "Sky Sabre, ~12 systems, £118m expansion Aug 2025" },
+    starstreak: { status: "operating", detail: "In service, 5,000 Martlet pledged to Ukraine" },
+    sampt_ng: { status: "planned", detail: "Aster B1NT for Type 45 destroyers (naval)" },
+  },
+  "Sweden": {
+    rbs70: { status: "operating", detail: "In service, domestic system" },
+    irist_sls: { status: "ordered", detail: "RBS 98 (vehicle-mounted), follow-on Dec 2025" },
+    irist_slm: { status: "ordered", detail: "7 fire units (€1.1bn)" },
+    patriot: { status: "ordered", detail: "4 systems ($3.2bn)" },
+  },
+  "Finland": {
+    nasams: { status: "operating", detail: "Legacy NASAMS in service" },
+    davids_sling: { status: "ordered", detail: "€316m, deliveries from 2025, FOC 2030" },
+  },
+  "Denmark": {
+    vl_mica: { status: "ordered", detail: "2 fire units (Jul 2025)" },
+    irist_slm: { status: "ordered", detail: "1+ fire units ordered" },
+    sampt_ng: { status: "selected", detail: "Selected Sep 2025, beat Patriot" },
+  },
+  "Norway": {
+    nasams: { status: "operating", detail: "4 new batteries (NOK 4.8bn / ~$450m)" },
+    irist_sls: { status: "operating", detail: "RBS 98 vehicle-mounted variant" },
+  },
+  "Netherlands": {
+    skyranger: { status: "ordered", detail: "22 units ordered" },
+    patriot: { status: "operating", detail: "4 systems in service" },
+  },
+  "Romania": {
+    patriot: { status: "operating", detail: "7 systems, 28 launchers" },
+    aegis: { status: "hosting", detail: "Aegis Ashore Deveselu (US-operated)" },
+  },
+  "Greece": {
+    patriot: { status: "operating", detail: "4+ systems in service" },
+  },
+  "Spain": {
+    patriot: { status: "operating", detail: "In service" },
+    nasams: { status: "operating", detail: "In service" },
+    aegis: { status: "hosting", detail: "4 BMD-capable destroyers at Rota (US)" },
+  },
+  "Switzerland": {
+    irist_slm: { status: "ordered", detail: "5 fire units (CHF 500m)" },
+    patriot: { status: "planned", detail: "Evaluating acquisition" },
+  },
+  "Estonia": {
+    irist_slm: { status: "ordered", detail: "Part of ~€1bn combined order with Latvia" },
+    mistral: { status: "operating", detail: "Mistral MANPADS in service" },
+  },
+  "Latvia": {
+    irist_slm: { status: "ordered", detail: "Part of ~€1bn combined order with Estonia" },
+  },
+  "Slovenia": {
+    irist_slm: { status: "ordered", detail: "3 fire units ordered" },
+  },
+  "Bulgaria": {
+    irist_slm: { status: "ordered", detail: "1 + options for 6 more" },
+    irist_slx: { status: "planned", detail: "Options for 1 SLX unit by 2032" },
+  },
+  "Belgium": {
+    nasams: { status: "ordered", detail: "10 batteries (€2.5bn, Jun 2025)" },
+    skyranger: { status: "selected", detail: "Selected for VSHORAD" },
+  },
+  "Austria": {
+    skyranger: { status: "ordered", detail: "36 units ordered" },
+  },
+  "Hungary": {
+    skyranger: { status: "planned", detail: "In development/evaluation" },
+    nasams: { status: "operating", detail: "In service" },
+  },
+  "Czechia": {
+    irist_slm: { status: "planned", detail: "Evaluating under ESSI" },
+  },
+};
+
+const sovereigntyConfig = {
+  european: { color: "#1a6b3c", label: "European sovereign" },
+  us_dependent: { color: "#b8860b", label: "US missile dependency" },
+  us_controlled: { color: "#c0392b", label: "US controlled" },
+  israeli_us: { color: "#8e44ad", label: "Israeli / US" },
+};
+
+const statusColors = {
+  operating: { bg: "#22c55e", label: "In service" },
+  ordered: { bg: "#3b82f6", label: "Ordered/contracted" },
+  selected: { bg: "#8b5cf6", label: "Selected" },
+  planned: { bg: "#64748b", label: "Planned/evaluating" },
+  hosting: { bg: "#ef4444", label: "Hosting (US-operated)" },
+};
+
+const layerConfig = {
+  "V/SHORAD": "#4a5568",
+  "SHORAD": "#4a5568",
+  "SHORAD/MRAD": "#4a5568",
+  "MRAD": "#4a5568",
+  "LRAD": "#4a5568",
+  "LRAD/BMD": "#4a5568",
+  "BMD": "#4a5568",
+  "BMD (exo)": "#4a5568",
+};
+
+const AdoptionMatrix = function() {
+  const [hoveredCell, setHoveredCell] = useState(null);
+  const [selectedLayer, setSelectedLayer] = useState("all");
+  const [selectedSovereignty, setSelectedSovereignty] = useState("all");
+  const [sortBy, setSortBy] = useState("systems"); // "systems" | "name" | "european"
+
+  const layers = ["V/SHORAD", "SHORAD", "SHORAD/MRAD", "MRAD", "LRAD", "LRAD/BMD", "BMD", "BMD (exo)"];
+  const uniqueLayers = ["V/SHORAD", "SHORAD/MRAD", "MRAD", "LRAD/BMD", "BMD", "BMD (exo)"];
+
+  const filteredSystems = useMemo(() => {
+    return systemsList.filter(s => {
+      if (selectedLayer !== "all") {
+        if (selectedLayer === "V/SHORAD" && !["V/SHORAD"].includes(s.layer)) return false;
+        if (selectedLayer === "SHORAD/MRAD" && !["SHORAD", "SHORAD/MRAD", "MRAD"].includes(s.layer)) return false;
+        if (selectedLayer === "MRAD" && !["MRAD"].includes(s.layer)) return false;
+        if (selectedLayer === "LRAD/BMD" && !["LRAD", "LRAD/BMD"].includes(s.layer)) return false;
+        if (selectedLayer === "BMD" && !["BMD"].includes(s.layer)) return false;
+        if (selectedLayer === "BMD (exo)" && !["BMD (exo)"].includes(s.layer)) return false;
+      }
+      if (selectedSovereignty !== "all" && s.sovereignty !== selectedSovereignty) return false;
+      return true;
+    });
+  }, [selectedLayer, selectedSovereignty]);
+
+  const sortedCountries = useMemo(() => {
+    return [...countries].sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      if (sortBy === "systems") {
+        const aCount = Object.keys(adoptionData[a.name] || {}).filter(sid => filteredSystems.find(s => s.id === sid)).length;
+        const bCount = Object.keys(adoptionData[b.name] || {}).filter(sid => filteredSystems.find(s => s.id === sid)).length;
+        return bCount - aCount;
+      }
+      if (sortBy === "european") {
+        const countEuropean = (name) => {
+          const ad = adoptionData[name] || {};
+          return Object.keys(ad).filter(sid => {
+            const sys = systemsList.find(s => s.id === sid);
+            return sys && sys.sovereignty === "european" && filteredSystems.find(s => s.id === sid);
+          }).length;
+        };
+        return countEuropean(b.name) - countEuropean(a.name);
+      }
+      return 0;
+    });
+  }, [sortBy, filteredSystems]);
+
+  const getSystemCount = (countryName) => {
+    const ad = adoptionData[countryName] || {};
+    return Object.keys(ad).filter(sid => filteredSystems.find(s => s.id === sid)).length;
+  };
+
+  const getEuropeanRatio = (countryName) => {
+    const ad = adoptionData[countryName] || {};
+    const relevant = Object.keys(ad).filter(sid => filteredSystems.find(s => s.id === sid));
+    if (relevant.length === 0) return null;
+    const euCount = relevant.filter(sid => {
+      const sys = systemsList.find(s => s.id === sid);
+      return sys && sys.sovereignty === "european";
+    }).length;
+    return Math.round((euCount / relevant.length) * 100);
+  };
+
+  return (
+    <div style={{ background: "#0a0e14", minHeight: "100vh", color: "#c8d2dc", fontFamily: "'IBM Plex Mono', 'SF Mono', 'Fira Code', monospace", padding: "24px 16px" }}>
+      <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        {/* Header */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 10, color: "#5a6a78", letterSpacing: 3, textTransform: "uppercase", marginBottom: 6 }}>European Air & Missile Defence</div>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#e8edf2", margin: 0, lineHeight: 1.3 }}>
+            Country × System Adoption Matrix
+          </h1>
+          <div style={{ fontSize: 11, color: "#5a6a78", marginTop: 6 }}>
+            Which countries have adopted which systems · Colour = procurement status · Border = sovereignty
+          </div>
+        </div>
+
+        {/* Filters row */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 9, color: "#3d4f5f", marginBottom: 4, textTransform: "uppercase", letterSpacing: 1.5 }}>Layer</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {["all", "V/SHORAD", "SHORAD/MRAD", "LRAD/BMD", "BMD", "BMD (exo)"].map(l => (
+                <button key={l} onClick={() => setSelectedLayer(l)}
+                  style={{
+                    background: selectedLayer === l ? "#1e2733" : "transparent",
+                    border: `1px solid ${selectedLayer === l ? "#3d4f5f" : "#1e2733"}`,
+                    color: selectedLayer === l ? "#e8edf2" : "#4a5a68",
+                    borderRadius: 4, padding: "3px 8px", fontSize: 9,
+                    cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+                  }}>
+                  {l === "all" ? "All layers" : l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 9, color: "#3d4f5f", marginBottom: 4, textTransform: "uppercase", letterSpacing: 1.5 }}>Sovereignty</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              <button onClick={() => setSelectedSovereignty("all")}
+                style={{
+                  background: selectedSovereignty === "all" ? "#1e2733" : "transparent",
+                  border: `1px solid ${selectedSovereignty === "all" ? "#3d4f5f" : "#1e2733"}`,
+                  color: selectedSovereignty === "all" ? "#e8edf2" : "#4a5a68",
+                  borderRadius: 4, padding: "3px 8px", fontSize: 9,
+                  cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+                }}>All</button>
+              {Object.entries(sovereigntyConfig).map(([key, cfg]) => (
+                <button key={key} onClick={() => setSelectedSovereignty(key)}
+                  style={{
+                    background: selectedSovereignty === key ? cfg.color + "22" : "transparent",
+                    border: `1px solid ${selectedSovereignty === key ? cfg.color : "#1e2733"}`,
+                    color: selectedSovereignty === key ? cfg.color : "#4a5a68",
+                    borderRadius: 4, padding: "3px 8px", fontSize: 9,
+                    cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+                  }}>
+                  {cfg.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 9, color: "#3d4f5f", marginBottom: 4, textTransform: "uppercase", letterSpacing: 1.5 }}>Sort countries</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {[
+                { key: "systems", label: "Most systems" },
+                { key: "european", label: "Most European" },
+                { key: "name", label: "A–Z" },
+              ].map(s => (
+                <button key={s.key} onClick={() => setSortBy(s.key)}
+                  style={{
+                    background: sortBy === s.key ? "#1e2733" : "transparent",
+                    border: `1px solid ${sortBy === s.key ? "#3d4f5f" : "#1e2733"}`,
+                    color: sortBy === s.key ? "#e8edf2" : "#4a5a68",
+                    borderRadius: 4, padding: "3px 8px", fontSize: 9,
+                    cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+                  }}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Matrix */}
+        <div style={{ overflowX: "auto", borderRadius: 8, border: "1px solid #1e2733" }}>
+          <table style={{ borderCollapse: "collapse", fontSize: 9, minWidth: 900 }}>
+            <thead>
+              <tr style={{ background: "#111820" }}>
+                <th style={{ padding: "6px 8px", textAlign: "left", color: "#5a6a78", fontWeight: 600, borderBottom: "1px solid #1e2733", position: "sticky", left: 0, background: "#111820", zIndex: 2, minWidth: 100 }}>
+                  Country
+                </th>
+                <th style={{ padding: "6px 4px", textAlign: "center", color: "#5a6a78", fontWeight: 600, borderBottom: "1px solid #1e2733", minWidth: 24 }}>
+                  #
+                </th>
+                <th style={{ padding: "6px 4px", textAlign: "center", color: "#1a6b3c", fontWeight: 600, borderBottom: "1px solid #1e2733", minWidth: 30 }}>
+                  EU%
+                </th>
+                {filteredSystems.map(sys => {
+                  const scfg = sovereigntyConfig[sys.sovereignty];
+                  return (
+                    <th key={sys.id} style={{
+                      padding: "4px 2px", textAlign: "center",
+                      borderBottom: `2px solid ${scfg.color}`,
+                      fontWeight: 600, color: "#7a8b9a",
+                      minWidth: 52, maxWidth: 64,
+                    }}>
+                      <div style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", fontSize: 8, lineHeight: 1.2, whiteSpace: "nowrap", height: 80, display: "flex", alignItems: "center" }}>
+                        {sys.name}
+                      </div>
+                      <div style={{ fontSize: 7, color: "#3d4f5f", marginTop: 2 }}>{sys.layer}</div>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {sortedCountries.map((country, ci) => {
+                const ad = adoptionData[country.name] || {};
+                const sysCount = getSystemCount(country.name);
+                const euRatio = getEuropeanRatio(country.name);
+
+                return (
+                  <tr key={country.name} style={{
+                    background: ci % 2 === 0 ? "#0d1117" : "#0f1419",
+                  }}>
+                    <td style={{
+                      padding: "5px 8px", fontWeight: 600, color: "#d0d8e0",
+                      borderBottom: "1px solid #151d27",
+                      position: "sticky", left: 0,
+                      background: ci % 2 === 0 ? "#0d1117" : "#0f1419",
+                      zIndex: 1, whiteSpace: "nowrap",
+                    }}>
+                      <span style={{ marginRight: 6 }}>{country.name}</span>
+                      {country.essi && <span style={{ fontSize: 7, color: "#3b82f6", border: "1px solid #3b82f644", borderRadius: 2, padding: "0 3px" }}>ESSI</span>}
+                    </td>
+                    <td style={{ padding: "5px 4px", textAlign: "center", color: sysCount > 0 ? "#d0d8e0" : "#2a3544", borderBottom: "1px solid #151d27", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                      {sysCount || "–"}
+                    </td>
+                    <td style={{
+                      padding: "5px 4px", textAlign: "center",
+                      borderBottom: "1px solid #151d27", fontWeight: 700, fontVariantNumeric: "tabular-nums",
+                      color: euRatio === null ? "#2a3544" : euRatio >= 75 ? "#22c55e" : euRatio >= 50 ? "#b8860b" : "#c0392b",
+                    }}>
+                      {euRatio === null ? "–" : `${euRatio}%`}
+                    </td>
+                    {filteredSystems.map(sys => {
+                      const cell = ad[sys.id];
+                      const scfg = sovereigntyConfig[sys.sovereignty];
+                      const isHovered = hoveredCell && hoveredCell.country === country.name && hoveredCell.system === sys.id;
+
+                      if (!cell) {
+                        return (
+                          <td key={sys.id} style={{
+                            padding: "3px 2px", textAlign: "center",
+                            borderBottom: "1px solid #151d27",
+                          }}>
+                            <div style={{ width: "100%", height: 22 }} />
+                          </td>
+                        );
+                      }
+
+                      const stCfg = statusColors[cell.status];
+
+                      return (
+                        <td key={sys.id} style={{
+                          padding: "3px 2px", textAlign: "center",
+                          borderBottom: "1px solid #151d27",
+                        }}
+                          onMouseEnter={() => setHoveredCell({ country: country.name, system: sys.id })}
+                          onMouseLeave={() => setHoveredCell(null)}
+                        >
+                          <div style={{
+                            width: "100%", height: 22, borderRadius: 3,
+                            background: stCfg.bg + (isHovered ? "55" : "28"),
+                            border: `1px solid ${isHovered ? stCfg.bg + "88" : scfg.color + "44"}`,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            cursor: "pointer", transition: "all 0.1s",
+                          }}>
+                            <div style={{
+                              width: 8, height: 8, borderRadius: "50%",
+                              background: stCfg.bg,
+                              opacity: 0.9,
+                            }} />
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Hover detail */}
+        <div style={{
+          minHeight: 40, padding: "8px 12px", marginTop: 8,
+          background: hoveredCell ? "#111820" : "transparent",
+          borderRadius: 6, transition: "all 0.2s",
+          border: hoveredCell ? "1px solid #1e2733" : "1px solid transparent",
+        }}>
+          {hoveredCell ? (() => {
+            const cell = (adoptionData[hoveredCell.country] || {})[hoveredCell.system];
+            const sys = systemsList.find(s => s.id === hoveredCell.system);
+            if (!cell || !sys) return null;
+            const scfg = sovereigntyConfig[sys.sovereignty];
+            const stCfg = statusColors[cell.status];
+            return (
+              <div style={{ fontSize: 11 }}>
+                <span style={{ fontWeight: 700, color: "#e8edf2" }}>{hoveredCell.country}</span>
+                <span style={{ color: "#5a6a78" }}> → </span>
+                <span style={{ fontWeight: 700, color: "#e8edf2" }}>{sys.name}</span>
+                <span style={{ color: "#5a6a78" }}> ({sys.maker}) · </span>
+                <span style={{ color: stCfg.bg, fontWeight: 600 }}>{stCfg.label}</span>
+                <span style={{ color: "#5a6a78" }}> · </span>
+                <span style={{ color: scfg.color }}>{scfg.label}</span>
+                <br />
+                <span style={{ color: "#7a8b9a", fontSize: 10 }}>{cell.detail}</span>
+              </div>
+            );
+          })() : (
+            <div style={{ fontSize: 10, color: "#3d4f5f" }}>Hover over a cell for procurement details</div>
+          )}
+        </div>
+
+        {/* Legend */}
+        <div style={{
+          marginTop: 16, padding: "12px 16px", borderRadius: 6,
+          background: "#111820", border: "1px solid #1e2733", fontSize: 10, color: "#5a6a78", lineHeight: 1.8,
+        }}>
+          <div style={{ marginBottom: 6, fontWeight: 600, color: "#7a8b9a", textTransform: "uppercase", letterSpacing: 1, fontSize: 9 }}>Status</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 10 }}>
+            {Object.entries(statusColors).map(([key, cfg]) => (
+              <span key={key} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: cfg.bg, display: "inline-block" }} />
+                {cfg.label}
+              </span>
+            ))}
+          </div>
+          <div style={{ marginBottom: 6, fontWeight: 600, color: "#7a8b9a", textTransform: "uppercase", letterSpacing: 1, fontSize: 9 }}>Sovereignty (column border colour)</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 10 }}>
+            {Object.entries(sovereigntyConfig).map(([key, cfg]) => (
+              <span key={key} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <span style={{ width: 14, height: 3, background: cfg.color, display: "inline-block", borderRadius: 1 }} />
+                {cfg.label}
+              </span>
+            ))}
+          </div>
+          <div style={{ color: "#4a5a68", fontSize: 9, lineHeight: 1.5 }}>
+            EU% = share of country's adopted systems that are European sovereign · ESSI = European Sky Shield Initiative member · Data as of Feb 2026
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(AdoptionMatrix));
+</script>
+</body>
+</html>
