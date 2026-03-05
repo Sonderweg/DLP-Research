@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>France Telecom — Pricing Evolution Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0A0A0F; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.min.js"></script>
+<script type="text/babel">
+const { useState } = React;
+const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar } = Recharts;
+
+// ── Mobile Data: Premium tier headline prices by operator over time ──
+const mobilePremium = [
+  { date: "Jan 23", Bouygues: 69.99, Orange: 64.99, SFR: 65.0, Free: 19.99 },
+  { date: "May 23", Bouygues: 69.99, Orange: 64.99, SFR: 64.99, Free: 19.99 },
+  { date: "Jul 23", Bouygues: 69.99, Orange: 64.99, SFR: 64.99, Free: 19.99 },
+  { date: "Oct 23", Bouygues: 69.99, Orange: 64.99, SFR: 64.99, Free: 19.99 },
+  { date: "Dec 23", Bouygues: 52.99, Orange: 64.99, SFR: 64.99, Free: 19.99 },
+  { date: "Feb 24", Bouygues: 57.99, Orange: 64.99, SFR: 64.99, Free: 19.99 },
+  { date: "Jun 24", Bouygues: 57.99, Orange: 67.99, SFR: 64.99, Free: 19.99 },
+  { date: "Oct 24", Bouygues: 57.99, Orange: 67.99, SFR: 64.99, Free: 19.99 },
+  { date: "Dec 24", Bouygues: 59.99, Orange: 67.99, SFR: 64.99, Free: 19.99 },
+  { date: "Mar 25", Bouygues: 59.99, Orange: 80.99, SFR: 39.99, Free: 19.99 },
+  { date: "Jun 25", Bouygues: 59.99, Orange: 80.99, SFR: 39.99, Free: 19.99 },
+  { date: "Sep 25", Bouygues: 59.99, Orange: 84.99, SFR: 39.99, Free: 19.99 },
+  { date: "Nov 25", Bouygues: 59.99, Orange: 84.99, SFR: 39.99, Free: 19.99 },
+  { date: "Jan 26", Bouygues: 59.99, Orange: 84.99, SFR: 39.99, Free: 19.99 },
+];
+
+// ── Mobile Data: Sub-brand SIM-only top plan prices ──
+const mobileSubBrand = [
+  { date: "Jan 23", "B&You": 19.99, Sosh: 19.99, RED: 22.99 },
+  { date: "May 23", "B&You": 17.99, Sosh: 15.99, RED: 20.99 },
+  { date: "Jul 23", "B&You": 17.99, Sosh: 20.99, RED: 20.99 },
+  { date: "Oct 23", "B&You": 19.99, Sosh: 20.99, RED: 15.99 },
+  { date: "Dec 23", "B&You": 17.99, Sosh: 20.99, RED: 17.99 },
+  { date: "Feb 24", "B&You": 17.99, Sosh: 20.99, RED: 17.99 },
+  { date: "Jun 24", "B&You": 15.99, Sosh: 20.99, RED: 19.99 },
+  { date: "Oct 24", "B&You": 16.99, Sosh: 20.99, RED: 19.99 },
+  { date: "Dec 24", "B&You": 17.99, Sosh: 20.99, RED: 19.99 },
+  { date: "Mar 25", "B&You": 20.99, Sosh: 20.99, RED: 19.99 },
+  { date: "Jun 25", "B&You": 9.99, Sosh: 20.99, RED: 19.99 },
+  { date: "Sep 25", "B&You": 19.99, Sosh: 20.99, RED: 19.99 },
+  { date: "Nov 25", "B&You": 19.99, Sosh: 20.99, RED: 19.99 },
+  { date: "Jan 26", "B&You": 19.99, Sosh: 20.99, RED: 19.99 },
+];
+
+// ── Mobile Data: Top-tier data allowance (GB) by operator ──
+const mobileData = [
+  { date: "Jan 23", Bouygues: 240, Orange: 220, SFR: 220, Free: 210 },
+  { date: "May 23", Bouygues: 240, Orange: 220, SFR: 220, Free: 210 },
+  { date: "Jul 23", Bouygues: 240, Orange: 240, SFR: 240, Free: 210 },
+  { date: "Oct 23", Bouygues: 240, Orange: 240, SFR: 240, Free: 250 },
+  { date: "Dec 23", Bouygues: 300, Orange: 240, SFR: 240, Free: 250 },
+  { date: "Feb 24", Bouygues: 300, Orange: 240, SFR: 240, Free: 250 },
+  { date: "Jun 24", Bouygues: 300, Orange: 240, SFR: 300, Free: 300 },
+  { date: "Oct 24", Bouygues: 300, Orange: 240, SFR: 300, Free: 300 },
+  { date: "Dec 24", Bouygues: 300, Orange: 300, SFR: 300, Free: 350 },
+  { date: "Mar 25", Bouygues: 300, Orange: 400, SFR: 350, Free: 350 },
+  { date: "Jun 25", Bouygues: 300, Orange: 400, SFR: 350, Free: 350 },
+  { date: "Sep 25", Bouygues: 300, Orange: 410, SFR: 350, Free: 350 },
+  { date: "Nov 25", Bouygues: 300, Orange: 410, SFR: null, Free: 350 },
+  { date: "Jan 26", Bouygues: 300, Orange: 410, SFR: null, Free: 350 },
+];
+
+// ── Mobile Data: Entry-level plan prices ──
+const mobileEntry = [
+  { date: "Jan 23", "B&You": 6.99, Sosh: 4.99, RED: 6.99, Free: 2.0 },
+  { date: "May 23", "B&You": 4.99, Sosh: 5.99, RED: 4.99, Free: 2.0 },
+  { date: "Jul 23", "B&You": 4.99, Sosh: 5.99, RED: 4.99, Free: 2.0 },
+  { date: "Oct 23", "B&You": 4.99, Sosh: 5.99, RED: 4.99, Free: 2.0 },
+  { date: "Dec 23", "B&You": 4.99, Sosh: 5.99, RED: 4.99, Free: 2.0 },
+  { date: "Feb 24", "B&You": 1.99, Sosh: 5.99, RED: 6.99, Free: 2.0 },
+  { date: "Jun 24", "B&You": 1.99, Sosh: 5.99, RED: 1.99, Free: 2.0 },
+  { date: "Oct 24", "B&You": 1.99, Sosh: 5.99, RED: 2.99, Free: 2.0 },
+  { date: "Dec 24", "B&You": 1.99, Sosh: 5.99, RED: 6.99, Free: 2.0 },
+  { date: "Mar 25", "B&You": 1.99, Sosh: 1.99, RED: 1.99, Free: 2.0 },
+  { date: "Jun 25", "B&You": 1.99, Sosh: 1.99, RED: 1.99, Free: 2.0 },
+  { date: "Sep 25", "B&You": 1.99, Sosh: 1.99, RED: 1.99, Free: 2.0 },
+  { date: "Nov 25", "B&You": 1.99, Sosh: 1.99, RED: 1.99, Free: 2.0 },
+  { date: "Jan 26", "B&You": 1.99, Sosh: 1.99, RED: 1.99, Free: 2.0 },
+];
+
+// ── Fixed Data: Premium fibre headline prices ──
+const fixedPremium = [
+  { date: "Jan 23", Bouygues: 50.99, Orange: 54.99, SFR: 50.0, Free: 49.99 },
+  { date: "May 23", Bouygues: 50.99, Orange: 55.99, SFR: 46.99, Free: 49.99 },
+  { date: "Oct 23", Bouygues: 50.99, Orange: 57.99, SFR: 46.99, Free: 49.99 },
+  { date: "Dec 23", Bouygues: 52.99, Orange: 57.99, SFR: 46.99, Free: 49.99 },
+  { date: "Feb 24", Bouygues: 52.99, Orange: 57.99, SFR: 46.99, Free: 49.99 },
+  { date: "Jul 24", Bouygues: 52.99, Orange: 57.99, SFR: 46.99, Free: 49.99 },
+  { date: "Oct 24", Bouygues: 52.99, Orange: 57.99, SFR: 46.99, Free: 49.99 },
+  { date: "Dec 24", Bouygues: 52.99, Orange: 57.99, SFR: 46.99, Free: 49.99 },
+  { date: "Mar 25", Bouygues: 52.99, Orange: 57.99, SFR: 46.99, Free: 49.99 },
+  { date: "Jun 25", Bouygues: 52.99, Orange: 57.99, SFR: 44.99, Free: 59.99 },
+  { date: "Sep 25", Bouygues: 51.99, Orange: 57.99, SFR: 44.99, Free: 59.99 },
+  { date: "Nov 25", Bouygues: 51.99, Orange: 57.99, SFR: 44.99, Free: 59.99 },
+  { date: "Jan 26", Bouygues: 51.99, Orange: 57.99, SFR: 44.99, Free: 59.99 },
+];
+
+// ── Fixed Data: Entry fibre prices ──
+const fixedEntry = [
+  { date: "Jan 23", Bouygues: 31.99, Sosh: 29.99, RED: 28.99, Free: 39.99 },
+  { date: "May 23", Bouygues: 31.99, Sosh: 30.99, RED: 29.99, Free: 39.99 },
+  { date: "Oct 23", Bouygues: 31.99, Sosh: 30.99, RED: 29.99, Free: 39.99 },
+  { date: "Dec 23", Bouygues: 32.99, Sosh: 30.99, RED: 29.99, Free: 39.99 },
+  { date: "Feb 24", Bouygues: 32.99, Sosh: 30.99, RED: 29.99, Free: 39.99 },
+  { date: "Jul 24", Bouygues: 29.99, Sosh: 25.99, RED: 25.99, Free: 29.99 },
+  { date: "Oct 24", Bouygues: 29.99, Sosh: 25.99, RED: 25.99, Free: 29.99 },
+  { date: "Dec 24", Bouygues: 29.99, Sosh: 25.99, RED: 25.99, Free: 29.99 },
+  { date: "Mar 25", Bouygues: 25.99, Sosh: 25.99, RED: 25.99, Free: 29.99 },
+  { date: "Jun 25", Bouygues: 23.99, Sosh: 24.99, RED: 23.99, Free: 23.99 },
+  { date: "Sep 25", Bouygues: 23.99, Sosh: 24.99, RED: 23.99, Free: 23.99 },
+  { date: "Nov 25", Bouygues: 23.99, Sosh: 24.99, RED: 23.99, Free: 23.99 },
+  { date: "Jan 26", Bouygues: 24.99, Sosh: 24.99, RED: 25.99, Free: 24.99 },
+];
+
+// ── Fixed Data: Max advertised speed (Mbps) ──
+const fixedSpeed = [
+  { date: "Jan 23", Bouygues: 2000, Orange: 2000, SFR: 8000, Free: 8000 },
+  { date: "May 23", Bouygues: 2000, Orange: 2000, SFR: 8000, Free: 8000 },
+  { date: "Oct 23", Bouygues: 2000, Orange: 2000, SFR: 8000, Free: 8000 },
+  { date: "Dec 23", Bouygues: 2000, Orange: 2000, SFR: 8000, Free: 8000 },
+  { date: "Feb 24", Bouygues: 2000, Orange: 2000, SFR: 8000, Free: 8000 },
+  { date: "Jul 24", Bouygues: 2000, Orange: 2000, SFR: 8000, Free: 8000 },
+  { date: "Oct 24", Bouygues: 8000, Orange: 2000, SFR: 8000, Free: 8000 },
+  { date: "Dec 24", Bouygues: 8000, Orange: 8000, SFR: 8000, Free: 8000 },
+  { date: "Mar 25", Bouygues: 8000, Orange: 8000, SFR: 8000, Free: 8000 },
+  { date: "Jun 25", Bouygues: 8000, Orange: 8000, SFR: 8000, Free: 8000 },
+  { date: "Sep 25", Bouygues: 8000, Orange: 8000, SFR: 8000, Free: 8000 },
+  { date: "Nov 25", Bouygues: 8000, Orange: 8000, SFR: 8000, Free: 8000 },
+  { date: "Jan 26", Bouygues: 8000, Orange: 8000, SFR: 8000, Free: 8000 },
+];
+
+const operatorColors = ["#0055A4", "#FF6600", "#E2001A", "#22C55E"];
+const subBrandColors = ["#60A5FA", "#FBBF24", "#F87171"];
+const entryColors = ["#60A5FA", "#FBBF24", "#F87171", "#22C55E"];
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: "rgba(15,15,20,0.95)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      borderRadius: 6,
+      padding: "10px 14px",
+      fontSize: 12,
+      fontFamily: "'DM Sans', sans-serif",
+      backdropFilter: "blur(8px)",
+    }}>
+      <div style={{ color: "#999", marginBottom: 6, fontWeight: 600, letterSpacing: 0.5 }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: p.color, display: "inline-block" }} />
+          <span style={{ color: "#ccc", minWidth: 70 }}>{p.name}</span>
+          <span style={{ color: "#fff", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+            {typeof p.value === "number" ? (p.value >= 100 ? p.value.toLocaleString() : "\u20AC" + p.value.toFixed(2)) : "N/A"}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const SpeedTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: "rgba(15,15,20,0.95)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      borderRadius: 6,
+      padding: "10px 14px",
+      fontSize: 12,
+      fontFamily: "'DM Sans', sans-serif",
+    }}>
+      <div style={{ color: "#999", marginBottom: 6, fontWeight: 600 }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: p.color, display: "inline-block" }} />
+          <span style={{ color: "#ccc", minWidth: 70 }}>{p.name}</span>
+          <span style={{ color: "#fff", fontWeight: 600 }}>{p.value >= 1000 ? (p.value / 1000) + " Gbps" : p.value + " Mbps"}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const DataTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: "rgba(15,15,20,0.95)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      borderRadius: 6,
+      padding: "10px 14px",
+      fontSize: 12,
+      fontFamily: "'DM Sans', sans-serif",
+    }}>
+      <div style={{ color: "#999", marginBottom: 6, fontWeight: 600 }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: p.color, display: "inline-block" }} />
+          <span style={{ color: "#ccc", minWidth: 70 }}>{p.name}</span>
+          <span style={{ color: "#fff", fontWeight: 600 }}>{p.value != null ? p.value + " GB" : "Unlimited"}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const SectionTitle = ({ children, sub }) => (
+  <div style={{ marginBottom: 8 }}>
+    <h2 style={{
+      fontSize: 17,
+      fontWeight: 700,
+      color: "#E8E8EC",
+      letterSpacing: -0.3,
+      margin: 0,
+      fontFamily: "'DM Sans', sans-serif",
+    }}>{children}</h2>
+    {sub && <p style={{ fontSize: 12, color: "#777", margin: "4px 0 0", fontFamily: "'DM Sans', sans-serif" }}>{sub}</p>}
+  </div>
+);
+
+const ChartCard = ({ children, style }) => (
+  <div style={{
+    background: "rgba(255,255,255,0.025)",
+    border: "1px solid rgba(255,255,255,0.06)",
+    borderRadius: 10,
+    padding: "20px 16px 12px",
+    ...style,
+  }}>
+    {children}
+  </div>
+);
+
+const tabs = [
+  { id: "mobile", label: "Mobile" },
+  { id: "fixed", label: "Fixed Broadband" },
+];
+
+function FrancePricingDashboard() {
+  const [activeTab, setActiveTab] = useState("mobile");
+
+  return (
+    <div style={{
+      minHeight: "100vh",
+      background: "#0A0A0F",
+      color: "#E8E8EC",
+      fontFamily: "'DM Sans', sans-serif",
+      padding: "28px 24px",
+    }}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+      {/* Header */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, background: "rgba(59,130,246,0.15)", color: "#60A5FA", padding: "3px 10px", borderRadius: 4, letterSpacing: 1, textTransform: "uppercase" }}>France Telecom</span>
+          <span style={{ fontSize: 11, color: "#555" }}>Jan 2023 – Jan 2026</span>
+        </div>
+        <h1 style={{
+          fontSize: 26,
+          fontWeight: 700,
+          margin: 0,
+          letterSpacing: -0.8,
+          background: "linear-gradient(135deg, #E8E8EC 0%, #888 100%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+        }}>
+          Pricing Evolution Dashboard
+        </h1>
+        <p style={{ fontSize: 13, color: "#666", margin: "6px 0 0", maxWidth: 600 }}>
+          Quarterly headline pricing across Bouygues, Orange, SFR & Free — main brands and sub-brands
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 2, marginBottom: 24, background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: 3, width: "fit-content" }}>
+        {tabs.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            style={{
+              padding: "8px 20px",
+              borderRadius: 6,
+              border: "none",
+              cursor: "pointer",
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: "'DM Sans', sans-serif",
+              transition: "all 0.2s",
+              background: activeTab === t.id ? "rgba(59,130,246,0.2)" : "transparent",
+              color: activeTab === t.id ? "#60A5FA" : "#666",
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* MOBILE CHARTS */}
+      {activeTab === "mobile" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Row 1 */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            <ChartCard>
+              <SectionTitle sub="Main brand flagship plan headline \u20AC/month">Premium Mobile Plans</SectionTitle>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={mobilePremium} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#555" }} axisLine={{ stroke: "rgba(255,255,255,0.06)" }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "#555" }} axisLine={false} tickLine={false} domain={[0, 90]} tickFormatter={v => "\u20AC" + v} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                  <Line type="monotone" dataKey="Bouygues" stroke={operatorColors[0]} strokeWidth={2} dot={{ r: 2.5 }} />
+                  <Line type="monotone" dataKey="Orange" stroke={operatorColors[1]} strokeWidth={2} dot={{ r: 2.5 }} />
+                  <Line type="monotone" dataKey="SFR" stroke={operatorColors[2]} strokeWidth={2} dot={{ r: 2.5 }} />
+                  <Line type="monotone" dataKey="Free" stroke={operatorColors[3]} strokeWidth={2} dot={{ r: 2.5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard>
+              <SectionTitle sub="Top sub-brand SIM-only plan \u20AC/month">Sub-brand Top Plans</SectionTitle>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={mobileSubBrand} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#555" }} axisLine={{ stroke: "rgba(255,255,255,0.06)" }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "#555" }} axisLine={false} tickLine={false} domain={[0, 28]} tickFormatter={v => "\u20AC" + v} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                  <Line type="monotone" dataKey="B&You" stroke={subBrandColors[0]} strokeWidth={2} dot={{ r: 2.5 }} />
+                  <Line type="monotone" dataKey="Sosh" stroke={subBrandColors[1]} strokeWidth={2} dot={{ r: 2.5 }} />
+                  <Line type="monotone" dataKey="RED" stroke={subBrandColors[2]} strokeWidth={2} dot={{ r: 2.5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+
+          {/* Row 2 */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            <ChartCard>
+              <SectionTitle sub="Max data allowance in top-tier plan (GB)">Data Allowance Inflation</SectionTitle>
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={mobileData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#555" }} axisLine={{ stroke: "rgba(255,255,255,0.06)" }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "#555" }} axisLine={false} tickLine={false} domain={[150, 450]} tickFormatter={v => v + "GB"} />
+                  <Tooltip content={<DataTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                  <Area type="monotone" dataKey="Bouygues" stroke={operatorColors[0]} fill={operatorColors[0]} fillOpacity={0.08} strokeWidth={2} dot={{ r: 2 }} />
+                  <Area type="monotone" dataKey="Orange" stroke={operatorColors[1]} fill={operatorColors[1]} fillOpacity={0.08} strokeWidth={2} dot={{ r: 2 }} />
+                  <Area type="monotone" dataKey="SFR" stroke={operatorColors[2]} fill={operatorColors[2]} fillOpacity={0.08} strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                  <Area type="monotone" dataKey="Free" stroke={operatorColors[3]} fill={operatorColors[3]} fillOpacity={0.08} strokeWidth={2} dot={{ r: 2 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard>
+              <SectionTitle sub="Cheapest sub-brand plan \u20AC/month">Entry-Level Price Race</SectionTitle>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={mobileEntry} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#555" }} axisLine={{ stroke: "rgba(255,255,255,0.06)" }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "#555" }} axisLine={false} tickLine={false} domain={[0, 8]} tickFormatter={v => "\u20AC" + v} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                  <Line type="stepAfter" dataKey="B&You" stroke={entryColors[0]} strokeWidth={2} dot={{ r: 2.5 }} />
+                  <Line type="stepAfter" dataKey="Sosh" stroke={entryColors[1]} strokeWidth={2} dot={{ r: 2.5 }} />
+                  <Line type="stepAfter" dataKey="RED" stroke={entryColors[2]} strokeWidth={2} dot={{ r: 2.5 }} />
+                  <Line type="stepAfter" dataKey="Free" stroke={entryColors[3]} strokeWidth={2} dot={{ r: 2.5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+
+          {/* Annotation */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
+            {[
+              { label: "Free's flagship", val: "\u20AC19.99", sub: "Unchanged for 3 years", color: "#22C55E" },
+              { label: "Orange premium", val: "+\u20AC20", sub: "\u20AC64.99 \u2192 \u20AC84.99 (w/phone)", color: "#FF6600" },
+              { label: "SFR restructure", val: "\u20AC65 \u2192 \u20AC40", sub: "Shifted to phone-bundled", color: "#E2001A" },
+              { label: "Entry convergence", val: "\u20AC1.99", sub: "All sub-brands by Mar 25", color: "#60A5FA" },
+            ].map((item, i) => (
+              <div key={i} style={{
+                background: "rgba(255,255,255,0.025)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: 8,
+                padding: "14px 16px",
+                borderLeft: "3px solid " + item.color,
+              }}>
+                <div style={{ fontSize: 11, color: "#777", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>{item.label}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#E8E8EC", fontVariantNumeric: "tabular-nums" }}>{item.val}</div>
+                <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{item.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* FIXED CHARTS */}
+      {activeTab === "fixed" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            <ChartCard>
+              <SectionTitle sub="Top fibre plan headline \u20AC/month">Premium Fibre Plans</SectionTitle>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={fixedPremium} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#555" }} axisLine={{ stroke: "rgba(255,255,255,0.06)" }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "#555" }} axisLine={false} tickLine={false} domain={[40, 65]} tickFormatter={v => "\u20AC" + v} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                  <Line type="monotone" dataKey="Bouygues" stroke={operatorColors[0]} strokeWidth={2} dot={{ r: 2.5 }} />
+                  <Line type="monotone" dataKey="Orange" stroke={operatorColors[1]} strokeWidth={2} dot={{ r: 2.5 }} />
+                  <Line type="monotone" dataKey="SFR" stroke={operatorColors[2]} strokeWidth={2} dot={{ r: 2.5 }} />
+                  <Line type="monotone" dataKey="Free" stroke={operatorColors[3]} strokeWidth={2} dot={{ r: 2.5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard>
+              <SectionTitle sub="Cheapest fibre plan headline \u20AC/month (incl. sub-brands)">Entry-Level Fibre</SectionTitle>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={fixedEntry} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#555" }} axisLine={{ stroke: "rgba(255,255,255,0.06)" }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "#555" }} axisLine={false} tickLine={false} domain={[18, 42]} tickFormatter={v => "\u20AC" + v} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                  <Line type="monotone" dataKey="Bouygues" stroke={operatorColors[0]} strokeWidth={2} dot={{ r: 2.5 }} />
+                  <Line type="monotone" dataKey="Sosh" stroke={subBrandColors[1]} strokeWidth={2} dot={{ r: 2.5 }} />
+                  <Line type="monotone" dataKey="RED" stroke={subBrandColors[2]} strokeWidth={2} dot={{ r: 2.5 }} />
+                  <Line type="monotone" dataKey="Free" stroke={operatorColors[3]} strokeWidth={2} dot={{ r: 2.5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20 }}>
+            <ChartCard>
+              <SectionTitle sub="Max advertised download speed for premium fibre tier (Mbps \u2192 Gbps)">Speed Tier Evolution</SectionTitle>
+              <ResponsiveContainer width="100%" height={260}>
+                <AreaChart data={fixedSpeed} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#555" }} axisLine={{ stroke: "rgba(255,255,255,0.06)" }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "#555" }} axisLine={false} tickLine={false} domain={[0, 9000]} tickFormatter={v => v >= 1000 ? (v / 1000) + "G" : v + "M"} />
+                  <Tooltip content={<SpeedTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                  <Area type="stepAfter" dataKey="Free" stroke={operatorColors[3]} fill={operatorColors[3]} fillOpacity={0.06} strokeWidth={2} dot={{ r: 2 }} />
+                  <Area type="stepAfter" dataKey="SFR" stroke={operatorColors[2]} fill={operatorColors[2]} fillOpacity={0.06} strokeWidth={2} dot={{ r: 2 }} />
+                  <Area type="stepAfter" dataKey="Orange" stroke={operatorColors[1]} fill={operatorColors[1]} fillOpacity={0.1} strokeWidth={2} dot={{ r: 2 }} />
+                  <Area type="stepAfter" dataKey="Bouygues" stroke={operatorColors[0]} fill={operatorColors[0]} fillOpacity={0.1} strokeWidth={2} dot={{ r: 2 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+
+          {/* Annotation */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
+            {[
+              { label: "Orange premium", val: "+\u20AC3", sub: "\u20AC54.99 \u2192 \u20AC57.99 (steady rises)", color: "#FF6600" },
+              { label: "SFR simplification", val: "\u2212\u20AC5", sub: "Dropped promos, cut headline to \u20AC44.99", color: "#E2001A" },
+              { label: "Entry fibre", val: "\u2192 ~\u20AC25", sub: "All operators converged from \u20AC28\u2013\u20AC40", color: "#60A5FA" },
+              { label: "Speed race", val: "8 Gbps", sub: "Universal by late 2024 (was 2G in 2023)", color: "#22C55E" },
+            ].map((item, i) => (
+              <div key={i} style={{
+                background: "rgba(255,255,255,0.025)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: 8,
+                padding: "14px 16px",
+                borderLeft: "3px solid " + item.color,
+              }}>
+                <div style={{ fontSize: 11, color: "#777", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>{item.label}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#E8E8EC", fontVariantNumeric: "tabular-nums" }}>{item.val}</div>
+                <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{item.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(FrancePricingDashboard));
+</script>
+</body>
+</html>
