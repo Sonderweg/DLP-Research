@@ -504,6 +504,101 @@
     opacity: 0.3;
   }
 
+  /* ── History dropdown ── */
+  .history-wrap {
+    position: relative;
+  }
+  .history-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 4px;
+    padding: 7px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .history-btn:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+  .history-btn .arrow { font-size: 8px; transition: transform 0.2s; }
+  .history-btn.open .arrow { transform: rotate(180deg); }
+
+  .history-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    min-width: 240px;
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .history-dropdown.open { display: block; }
+
+  .history-dropdown-header {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 12px 14px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .history-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-item:hover { background: rgba(201,168,76,0.06); }
+  .history-item.active { background: rgba(201,168,76,0.1); }
+
+  .history-item-date {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-primary);
+    letter-spacing: 0.3px;
+  }
+  .history-item-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+  .history-item-delete {
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 2px;
+    opacity: 0;
+    transition: all 0.15s;
+  }
+  .history-item:hover .history-item-delete { opacity: 1; }
+  .history-item-delete:hover { color: var(--accent-red); }
+
+  .history-empty {
+    padding: 20px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
   /* ── Footer ── */
   .footer {
     border-top: 1px solid var(--border);
@@ -553,11 +648,22 @@
   <div class="masthead-right">
     <div class="datestamp" id="dateDisplay"></div>
     <div class="timestamp-detail" id="timeDisplay"></div>
-    <button class="refresh-btn" id="refreshBtn" onclick="refreshBrief()" disabled>
-      <span class="spinner"></span>
-      <span class="refresh-icon">&#8635;</span>
-      Refresh Brief
-    </button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="refresh-btn" id="refreshBtn" onclick="refreshBrief()" disabled>
+        <span class="spinner"></span>
+        <span class="refresh-icon">&#8635;</span>
+        Refresh Brief
+      </button>
+      <div class="history-wrap">
+        <button class="history-btn" id="historyBtn" onclick="toggleHistory()">
+          Past Briefs <span class="arrow">&#9662;</span>
+        </button>
+        <div class="history-dropdown" id="historyDropdown">
+          <div class="history-dropdown-header">Saved Briefs</div>
+          <div id="historyList"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -592,6 +698,108 @@
 
 <script>
 let API_KEY = null;
+const HISTORY_KEY = 'dlp_brief_history';
+
+// ── History management ──
+function getHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+  } catch { return []; }
+}
+
+function saveToHistory(html, meta) {
+  const history = getHistory();
+  const now = new Date();
+  const entry = {
+    id: now.getTime(),
+    date: now.toLocaleDateString('en-GB', { weekday:'short', year:'numeric', month:'short', day:'numeric' }),
+    time: now.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }),
+    html: html,
+    topics: meta.topics || '',
+    sources: meta.sources || '',
+    status: meta.status || []
+  };
+  history.unshift(entry);
+  // Keep last 30 briefs
+  if (history.length > 30) history.length = 30;
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  renderHistory();
+}
+
+function deleteFromHistory(id, event) {
+  event.stopPropagation();
+  const history = getHistory().filter(h => h.id !== id);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  renderHistory();
+}
+
+function loadFromHistory(id) {
+  const history = getHistory();
+  const entry = history.find(h => h.id === id);
+  if (!entry) return;
+
+  const content = document.getElementById('briefContent');
+  const loading = document.getElementById('loadingState');
+  const errorEl = document.getElementById('errorState');
+
+  loading.classList.add('hidden');
+  errorEl.classList.remove('visible');
+
+  content.innerHTML = entry.html;
+  content.classList.remove('hidden');
+
+  renderStatusBar(entry.status);
+  if (entry.topics) {
+    document.getElementById('topicsLine').textContent = 'TOPICS: ' + entry.topics;
+  }
+  if (entry.sources) {
+    document.getElementById('sourcesLine').textContent = 'SOURCES: ' + entry.sources;
+  }
+  document.getElementById('dateDisplay').textContent = entry.date;
+  document.getElementById('timeDisplay').textContent = entry.time + ' \u00B7 Saved Brief';
+
+  toggleHistory();
+  // Highlight active
+  document.querySelectorAll('.history-item').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.id) === id);
+  });
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  const history = getHistory();
+  if (!history.length) {
+    list.innerHTML = '<div class="history-empty">No saved briefs yet.<br>Generate one to start the archive.</div>';
+    return;
+  }
+  list.innerHTML = history.map(h => `
+    <div class="history-item" data-id="${h.id}" onclick="loadFromHistory(${h.id})">
+      <div>
+        <div class="history-item-date">${h.date}</div>
+        <div class="history-item-time">${h.time}</div>
+      </div>
+      <span class="history-item-delete" onclick="deleteFromHistory(${h.id}, event)" title="Remove">&times;</span>
+    </div>
+  `).join('');
+}
+
+function toggleHistory() {
+  const btn = document.getElementById('historyBtn');
+  const dropdown = document.getElementById('historyDropdown');
+  const isOpen = dropdown.classList.contains('open');
+  dropdown.classList.toggle('open');
+  btn.classList.toggle('open');
+  if (!isOpen) renderHistory();
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  const wrap = document.querySelector('.history-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('historyDropdown').classList.remove('open');
+    document.getElementById('historyBtn').classList.remove('open');
+  }
+});
 
 // ── Date formatting ──
 function formatDate() {
@@ -606,15 +814,129 @@ function formatDate() {
     hours + ':' + mins + ' London \u00B7 24-Hour Window';
 }
 formatDate();
+renderHistory();
+
+// ── Seed brief: 5 March 2026 ──
+const SEED_BRIEF = {
+  id: 1741161600000,
+  date: 'Thu, 5 Mar 2026',
+  time: '07:00',
+  topics: 'DEFENCE / NATO \u00B7 FRENCH TELCO / SFR \u00B7 EU COMPETITION',
+  sources: 'NATO.INT \u00B7 \u00C9LYS\u00C9E \u00B7 AL JAZEERA \u00B7 ATLANTIC COUNCIL \u00B7 CHATHAM HOUSE \u00B7 FRANCEINFO \u00B7 CLUBIC \u00B7 UNIVERSFREEBOX \u00B7 FRANCE24',
+  status: [
+    {"type":"live","text":"1 Item <24h"},
+    {"type":"active","text":"Active: Macron Nuclear Doctrine"},
+    {"type":"active","text":"Active: SFR Jurisdiction Clock"},
+    {"type":"monitor","text":"Monitor: EU Art. 42.7 Debate"}
+  ],
+  html: '<div class="theme-summary" style="animation: fadeIn 0.3s ease forwards;"><span class="theme-label">Today\u2019s Dominant Themes</span><span class="badge badge-nuclear">Macron Nuclear Doctrine</span><span class="badge badge-iran">Iran / EU Art. 42.7</span><span class="badge badge-defence">Rutte / Ankara Summit</span><span class="badge badge-union">CFDT / SFR Employment</span><span class="badge badge-telco">SFR Jurisdiction Deadline</span></div>'
+  + '<div class="section"><div class="section-header"><div class="section-icon">\uD83D\uDEE1\uFE0F</div><div class="section-label"><div class="section-tag">Topic A</div><div class="section-name">Defence &amp; NATO</div></div><div class="section-count">3 Items</div></div>'
+  + '<div class="subsection-title">Statements \u2014 Direct Quotes</div>'
+
+  + '<div class="card"><div class="card-header"><div><div class="card-speaker">Mark Rutte \u2014 NATO Secretary General</div><div class="card-context">Joint press conference \u00B7 Skopje, North Macedonia \u00B7 3 March 2026</div></div><div class="badges"><span class="badge badge-iran">Iran</span><span class="badge badge-defence">NATO</span></div></div>'
+  + '<blockquote>\u201CI feel widespread support in Europe. I was on the phone with many leaders over the weekend and also early this week. I clearly sensed that the removal of nuclear capability, the removal of ballistic missile capability, and also Khamenei gone, this is applauded by many of my colleagues in NATO.\u201D</blockquote>'
+  + '<blockquote>\u201CThis is not the time to rest on our laurels. All allies must do more: increasing defence investment and boosting production is essential to achieving our agreed capability goals.\u201D</blockquote></div>'
+
+  + '<div class="card"><div class="card-header"><div><div class="card-speaker">Emmanuel Macron</div><div class="card-context">Nuclear doctrine speech \u00B7 \u00CEle Longue naval base \u00B7 2 March 2026 \u2014 ongoing analytical commentary today</div></div><div class="badges"><span class="badge badge-nuclear">Nuclear Doctrine</span><span class="badge badge-defence">Strategic</span></div></div>'
+  + '<blockquote>\u201CTo be free, we have to be feared.\u201D</blockquote></div>'
+
+  + '<div class="card"><div class="card-header"><div><div class="card-speaker">Macron\u2013Merz Joint Declaration</div><div class="card-context">\u00C9lys\u00E9e \u00B7 2 March 2026 \u2014 primary wave of analytical commentary published today</div></div><div class="badges"><span class="badge badge-nuclear">Nuclear Cooperation</span><span class="badge badge-defence">Franco-German</span></div></div>'
+  + '<blockquote>\u201CFrance and Germany have decided to enter into closer cooperation in the field of deterrence in response to the evolving threat landscape. France and Germany have established a high-ranking nuclear steering group that will act as a bilateral framework for doctrinal dialogue and the coordination of strategic cooperation, including consultations regarding the appropriate mix of conventional, missile defence and French nuclear capabilities.\u201D</blockquote></div>'
+
+  + '<div class="subsection-title">Material Reporting \u2014 No Direct Quote</div>'
+
+  + '<div class="card"><div class="card-header"><div><div class="card-speaker">Macron Nuclear Doctrine \u2014 Analytical Commentary</div><div class="card-context">Atlantic Council \u00B7 Chatham House \u00B7 Published within last 17 hours</div></div><div class="badges"><span class="badge badge-nuclear">Nuclear</span><span class="badge badge-defence">Europe</span></div></div>'
+  + '<div class="card-body">Macron announced four concrete changes to French nuclear posture: <strong>increase in warhead count</strong>; <strong>cessation of public stockpile disclosure</strong> (strategic ambiguity); <strong>allowance for temporary forward-basing</strong> of nuclear-capable Rafales at allied bases; <strong>enhanced bilateral deterrence cooperation</strong>. Nuclear dialogue opened with Britain, Germany, Poland, Netherlands, Belgium, Greece, Sweden, Denmark. <strong>Notably absent: Baltic states, Norway, Finland</strong> \u2014 the countries directly bordering Russia \u2014 raising material questions about the credible reach of French extended deterrence. Merz confirmed Germany will participate in French nuclear exercises this year. Polish PM Tusk: allied rearmament ensures \u201Cour enemies will never dare to attack us.\u201D</div></div>'
+
+  + '<div class="card"><div class="card-header"><div><div class="card-speaker">EU Article 42.7 \u2014 Europe\u2019s Mutual Defence Debate</div><div class="card-context">Al Jazeera analysis \u00B7 4 March 2026</div></div><div class="badges"><span class="badge badge-iran">Iran</span><span class="badge badge-defence">EU Defence</span></div></div>'
+  + '<div class="card-body">Europe remains split on the US-Israeli campaign against Iran. Cyprus \u2014 an EU member but not a NATO member \u2014 has not yet invoked Article 42.7 (EU mutual defence clause), despite the Iranian drone strike on the RAF base there. Von der Leyen\u2019s Munich Security Conference statement (\u201CThe time has come to bring Europe\u2019s mutual defence clause to life\u201D) is gaining renewed traction. Rutte stated NATO will not participate in the Iran operation but will defend \u201Cevery inch\u201D of Alliance territory. Spain remains the sole NATO member refusing to support the US-Israeli action.</div></div>'
+
+  + '<div class="card"><div class="card-header"><div><div class="card-speaker">Rutte \u2014 North Macedonia Visit / Ankara Summit Preview</div><div class="card-context">NATO.int \u00B7 3 March 2026</div></div><div class="badges"><span class="badge badge-defence">NATO Summit</span></div></div>'
+  + '<div class="card-body">Rutte confirmed the <strong>next NATO summit will be held in Ankara, July 2026</strong>. Called on allies to demonstrate tangible progress on defence investment, production ramp-up, and Ukraine support ahead of Ankara. Welcomed North Macedonia hitting 2%+ GDP defence spending in 2025 as \u201Cvital progress\u201D toward the 5% Hague target by 2035.</div></div>'
+  + '</div>'
+
+  + '<div class="gold-rule"></div>'
+
+  + '<div class="section"><div class="section-header"><div class="section-icon">\uD83D\uDCE1</div><div class="section-label"><div class="section-tag">Topic B</div><div class="section-name">French Telco / SFR Acquisition</div></div><div class="section-count">2 Items \u00B7 1 New</div></div>'
+  + '<div class="subsection-title">Statements \u2014 Direct Quotes</div>'
+
+  + '<div class="card new-flag"><div class="card-header"><div><div class="card-speaker">Marylise L\u00E9on \u2014 CFDT Secretary-General</div><div class="card-context">France Inter / franceinfo \u00B7 4 March 2026 \u00B7 <strong style="color: var(--accent-red);">Within 24 hours</strong></div></div><div class="badges"><span class="badge badge-new">\uD83D\uDD34 New</span><span class="badge badge-union">Labour</span><span class="badge badge-telco">SFR</span></div></div>'
+  + '<blockquote>\u201CCette op\u00E9ration ne peut pas se faire sans qu\u2019il y ait des garanties sociales opposables pour les salari\u00E9s et le maintien des emplois.\u201D</blockquote>'
+  + '<blockquote>\u201CIl est hors de question que cette op\u00E9ration soit synonyme de casse sociale. C\u2019est aujourd\u2019hui qu\u2019il faut se mettre autour de la table pour anticiper les impacts sociaux.\u201D</blockquote>'
+  + '<div class="card-body" style="margin-top: 12px;">L\u00E9on called for tripartite negotiation between the State, operators and unions to begin <em>immediately</em>. First formal escalation of the SFR employment question to national media by the main representative union.</div></div>'
+
+  + '<div class="subsection-title">Material Reporting \u2014 No Direct Quote</div>'
+
+  + '<div class="card new-flag"><div class="card-header"><div><div class="card-speaker">CFDT / SFR Employment Pressure</div><div class="card-context">franceinfo \u00B7 4 March 2026 \u00B7 <strong style="color: var(--accent-red);">Within 24 hours</strong></div></div><div class="badges"><span class="badge badge-new">\uD83D\uDD34 New</span><span class="badge badge-union">Labour</span><span class="badge badge-telco">SFR</span></div></div>'
+  + '<div class="card-body">CFDT central delegate at SFR, Olivier Lelong, warned that <strong>approximately 8,000 jobs</strong> are at risk without intervention. Union demanding a \u201Cstrong, binding and protective social framework\u201D be established before any deal proceeds. This signals the SFR dossier is entering a <strong>political dimension</strong> \u2014 employment guarantees will likely become a formal regulatory remedy requirement before ADLC or the EC approves the transaction.</div></div>'
+
+  + '<div class="card"><div class="card-header"><div><div class="card-speaker">Jurisdiction Clock \u2014 No Change</div><div class="card-context">Standing position \u00B7 End-March 2026 deadline</div></div><div class="badges"><span class="badge badge-telco">Regulatory</span></div></div>'
+  + '<div class="card-body"><strong>No formal offer has been filed.</strong> The end-of-March deadline for Paris jurisdiction remains intact. Once Orange finalises the MasOrange acquisition (expected before end-March), two of the three buyers \u2014 Orange and Iliad \u2014 would be required to file with the <strong>European Commission</strong> rather than the Autorit\u00E9 de la concurrence fran\u00E7aise, potentially complicating and extending the review by 6\u201312 months. Binding offer expected <strong>end of April 2026</strong>. C\u0153ur\u00E9 (ADLC) has consistently stated a pre-end-2026 clearance is \u201Chighly improbable.\u201D</div></div>'
+  + '</div>'
+
+  + '<div class="section"><div class="silence-card"><div class="silence-icon">\u25C9</div><div class="silence-text"><strong>No qualifying material in last 24h from monitored speakers on Topics A\u2013B</strong>Trump \u00B7 Lutnick \u00B7 Bessent \u00B7 Sacks \u00B7 von der Leyen \u00B7 Pistorius \u00B7 Kallas \u00B7 Costa \u00B7 Lecornu \u00B7 Lescure \u00B7 de La Raudi\u00E8re \u00B7 Ferracci \u00B7 Drahi \u00B7 C\u0153ur\u00E9</div></div></div>'
+};
+
+// ── Seed history if empty ──
+function seedHistory() {
+  const history = getHistory();
+  if (history.length === 0) {
+    history.push(SEED_BRIEF);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  }
+}
+seedHistory();
+
+// ── Load latest brief on startup (no API call) ──
+(function initPage() {
+  const history = getHistory();
+  const loading = document.getElementById('loadingState');
+  const content = document.getElementById('briefContent');
+  const overlay = document.getElementById('keyOverlay');
+
+  // Hide key overlay — only shown when user clicks Refresh
+  overlay.classList.add('hidden');
+
+  // Enable refresh button (API key not needed until click)
+  document.getElementById('refreshBtn').disabled = false;
+
+  if (history.length > 0) {
+    // Load the most recent saved brief
+    const latest = history[0];
+    loading.classList.add('hidden');
+    content.innerHTML = latest.html;
+    content.classList.remove('hidden');
+
+    renderStatusBar(latest.status);
+    if (latest.topics) {
+      document.getElementById('topicsLine').textContent = 'TOPICS: ' + latest.topics;
+    }
+    if (latest.sources) {
+      document.getElementById('sourcesLine').textContent = 'SOURCES: ' + latest.sources;
+    }
+    document.getElementById('dateDisplay').textContent = latest.date;
+    document.getElementById('timeDisplay').textContent = latest.time + ' \u00B7 Saved Brief';
+  } else {
+    // No history — show empty state
+    loading.classList.add('hidden');
+    content.innerHTML = '<div style="text-align:center;padding:80px 40px;"><div style="font-family:IBM Plex Mono,monospace;font-size:11px;color:#4a4f5c;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">No briefs generated yet</div><div style="font-family:IBM Plex Mono,monospace;font-size:10px;color:#3a3f4c;">Click Refresh Brief to generate your first daily intelligence brief.</div></div>';
+    content.classList.remove('hidden');
+  }
+})();
 
 // ── Key submission ──
+let pendingRefresh = false;
+
 function submitKey() {
   const key = document.getElementById('apiKeyInput').value.trim();
   if (!key) return;
   API_KEY = key;
   document.getElementById('keyOverlay').classList.add('hidden');
   document.getElementById('refreshBtn').disabled = false;
-  refreshBrief();
+  if (pendingRefresh) {
+    pendingRefresh = false;
+    refreshBrief();
+  }
 }
 
 document.getElementById('apiKeyInput').addEventListener('keydown', function(e) {
@@ -749,6 +1071,14 @@ function renderStatusBar(items) {
 
 // ── Main refresh ──
 async function refreshBrief() {
+  // If no API key yet, show the key overlay and queue the refresh
+  if (!API_KEY) {
+    pendingRefresh = true;
+    document.getElementById('keyOverlay').classList.remove('hidden');
+    document.getElementById('apiKeyInput').focus();
+    return;
+  }
+
   const btn = document.getElementById('refreshBtn');
   const loading = document.getElementById('loadingState');
   const errorEl = document.getElementById('errorState');
@@ -792,6 +1122,9 @@ async function refreshBrief() {
     if (meta.sources) {
       document.getElementById('sourcesLine').textContent = 'SOURCES: ' + meta.sources;
     }
+
+    // Save to history
+    saveToHistory(cleanHtml, meta);
 
     btn.disabled = false;
 
