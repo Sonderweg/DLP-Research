@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Private Credit Short Thesis — Trade Structuring Memo</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Newsreader:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0c10;
+  --surface: #12151c;
+  --surface2: #181c26;
+  --surface3: #1e2330;
+  --border: #2a3040;
+  --border-light: #353d50;
+  --text: #c8cdd8;
+  --text-dim: #6b7280;
+  --text-bright: #e8ecf4;
+  --accent: #f59e0b;
+  --accent-dim: rgba(245, 158, 11, 0.15);
+  --red: #ef4444;
+  --red-dim: rgba(239, 68, 68, 0.12);
+  --green: #22c55e;
+  --green-dim: rgba(34, 197, 94, 0.12);
+  --blue: #3b82f6;
+  --blue-dim: rgba(59, 130, 246, 0.12);
+  --purple: #a78bfa;
+  --tier1: #f59e0b;
+  --tier2: #3b82f6;
+  --tier3: #6b7280;
+  --mono: 'JetBrains Mono', monospace;
+  --serif: 'Newsreader', Georgia, serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--accent); color: var(--bg); }
+.noise {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9999;
+}
+header {
+  padding: 40px 48px 32px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+header::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(245,158,11,0.04) 0%, transparent 50%, rgba(239,68,68,0.03) 100%);
+  pointer-events: none;
+}
+.header-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  position: relative;
+}
+.header-label {
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 12px; font-weight: 500;
+}
+h1 {
+  font-family: var(--serif);
+  font-size: 32px; font-weight: 400; color: var(--text-bright);
+  letter-spacing: -0.5px; line-height: 1.2;
+}
+h1 span { color: var(--accent); }
+.header-meta {
+  display: flex; gap: 24px; margin-top: 16px; font-size: 11px; color: var(--text-dim);
+}
+.header-meta span::before {
+  content: ''; display: inline-block; width: 6px; height: 6px;
+  border-radius: 50%; margin-right: 8px; vertical-align: middle;
+}
+.meta-conf::before { background: var(--red); }
+.meta-date::before { background: var(--accent); }
+.meta-status::before { background: var(--green); }
+.header-badge {
+  background: var(--red-dim); border: 1px solid rgba(239,68,68,0.3);
+  padding: 6px 14px; border-radius: 4px; font-size: 10px;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--red);
+  font-weight: 600;
+}
+nav {
+  display: flex; gap: 0; padding: 0 48px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky; top: 0; z-index: 100;
+}
+nav button {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  padding: 14px 20px; color: var(--text-dim); font-family: var(--mono);
+  font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+  cursor: pointer; transition: all 0.2s;
+  font-weight: 500;
+}
+nav button:hover { color: var(--text); background: var(--surface2); }
+nav button.active {
+  color: var(--accent); border-bottom-color: var(--accent);
+  background: var(--surface2);
+}
+main { padding: 32px 48px 80px; }
+.section { display: none; animation: fadeIn 0.3s ease; }
+.section.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.section-title {
+  font-family: var(--serif); font-size: 22px; font-weight: 400;
+  color: var(--text-bright); margin-bottom: 8px;
+}
+.section-subtitle {
+  font-size: 11px; color: var(--text-dim); margin-bottom: 32px;
+  line-height: 1.7;
+}
+.insight-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
+.insight-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px; padding: 24px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.2s;
+}
+.insight-card:hover { border-color: var(--border-light); }
+.insight-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.insight-card:nth-child(1)::before { background: var(--accent); }
+.insight-card:nth-child(2)::before { background: var(--red); }
+.insight-card:nth-child(3)::before { background: var(--green); }
+.insight-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+.insight-value { font-size: 28px; font-weight: 700; color: var(--text-bright); margin-bottom: 4px; font-family: var(--mono); }
+.insight-desc { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+.thesis-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  padding: 28px 32px;
+  margin-bottom: 40px;
+}
+.thesis-box p {
+  font-family: var(--serif);
+  font-size: 16px; line-height: 1.8;
+  color: var(--text);
+  font-style: italic;
+}
+.thesis-box p strong { color: var(--accent); font-style: normal; font-weight: 600; }
+.top3 { margin-bottom: 40px; }
+.top3-header { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; font-weight: 600; }
+.top3-item {
+  display: grid; grid-template-columns: 40px 1fr;
+  gap: 16px; padding: 18px 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; margin-bottom: 8px;
+  transition: border-color 0.2s;
+}
+.top3-item:hover { border-color: var(--accent); }
+.top3-rank {
+  font-size: 20px; font-weight: 700; color: var(--accent);
+  font-family: var(--serif);
+  display: flex; align-items: center; justify-content: center;
+}
+.top3-content h4 { font-size: 13px; color: var(--text-bright); margin-bottom: 6px; font-weight: 600; }
+.top3-content p { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+.top3-content .carry-tag {
+  display: inline-block; background: var(--red-dim); color: var(--red);
+  padding: 2px 8px; border-radius: 3px; font-size: 10px; margin-left: 8px;
+  font-weight: 500;
+}
+.avoid-box {
+  background: var(--red-dim);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 6px; padding: 20px 24px;
+  margin-bottom: 40px;
+}
+.avoid-box h4 { color: var(--red); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+.avoid-box p { font-size: 12px; color: var(--text); line-height: 1.6; }
+.summary-table-wrap {
+  overflow-x: auto; border: 1px solid var(--border);
+  border-radius: 6px; margin-bottom: 40px;
+}
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: 12px;
+}
+thead { background: var(--surface2); }
+th {
+  text-align: left; padding: 12px 16px;
+  font-size: 10px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text-dim);
+  font-weight: 600; border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr { background: var(--surface); transition: background 0.15s; }
+tr:hover { background: var(--surface2); }
+.entity-name { color: var(--text-bright); font-weight: 600; }
+.carry-neg { color: var(--red); font-weight: 500; }
+.return-pos { color: var(--green); font-weight: 500; }
+.convexity { color: var(--accent); letter-spacing: 1px; }
+.conviction-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 3px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
+}
+.conv-vh { background: var(--accent-dim); color: var(--accent); }
+.conv-h { background: var(--blue-dim); color: var(--blue); }
+.conv-m { background: rgba(107,114,128,0.2); color: var(--text-dim); }
+.trade-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.trade-card:hover { border-color: var(--border-light); }
+.trade-header {
+  display: grid;
+  grid-template-columns: 48px 1fr auto auto auto;
+  gap: 16px; align-items: center;
+  padding: 20px 24px;
+  cursor: pointer;
+  user-select: none;
+}
+.trade-num {
+  width: 40px; height: 40px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; font-family: var(--serif);
+}
+.tier1-bg { background: var(--accent-dim); color: var(--tier1); border: 1px solid rgba(245,158,11,0.3); }
+.tier2-bg { background: var(--blue-dim); color: var(--tier2); border: 1px solid rgba(59,130,246,0.3); }
+.tier3-bg { background: rgba(107,114,128,0.15); color: var(--tier3); border: 1px solid rgba(107,114,128,0.3); }
+.trade-name h3 { font-size: 14px; color: var(--text-bright); font-weight: 600; margin-bottom: 2px; }
+.trade-name .trade-sub { font-size: 11px; color: var(--text-dim); }
+.trade-stat {
+  text-align: center; padding: 0 16px;
+  min-width: 90px;
+}
+.trade-stat-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; }
+.trade-stat-value { font-size: 14px; font-weight: 600; }
+.trade-toggle {
+  font-size: 18px; color: var(--text-dim); transition: transform 0.3s, color 0.2s;
+  padding: 0 8px;
+}
+.trade-card.open .trade-toggle { transform: rotate(180deg); color: var(--accent); }
+.trade-body {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.4s ease;
+  border-top: 0px solid transparent;
+}
+.trade-card.open .trade-body {
+  max-height: 2000px;
+  border-top: 1px solid var(--border);
+}
+.trade-content { padding: 24px; }
+.trade-section { margin-bottom: 24px; }
+.trade-section:last-child { margin-bottom: 0; }
+.trade-section-title {
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 12px; font-weight: 600;
+}
+.legs-table { width: 100%; border-collapse: collapse; margin-bottom: 0; }
+.legs-table th {
+  background: var(--surface2); padding: 8px 12px;
+  font-size: 9px; letter-spacing: 1.5px; border-bottom: 1px solid var(--border);
+}
+.legs-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12px; }
+.metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.metric-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; background: var(--surface2);
+  border-radius: 4px;
+}
+.metric-label { font-size: 11px; color: var(--text-dim); }
+.metric-value { font-size: 12px; font-weight: 600; color: var(--text-bright); }
+.trade-rationale {
+  background: var(--surface2); border-radius: 6px;
+  padding: 16px 20px;
+  border-left: 2px solid var(--accent);
+}
+.trade-rationale p {
+  font-family: var(--serif); font-size: 13px;
+  line-height: 1.7; color: var(--text);
+  font-style: italic;
+}
+.alloc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
+.alloc-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 24px; position: relative; overflow: hidden;
+}
+.alloc-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.alloc-card.t1::before { background: var(--tier1); }
+.alloc-card.t2::before { background: var(--tier2); }
+.alloc-card.t3::before { background: var(--tier3); }
+.alloc-pct { font-size: 36px; font-weight: 700; margin-bottom: 4px; font-family: var(--mono); }
+.alloc-card.t1 .alloc-pct { color: var(--tier1); }
+.alloc-card.t2 .alloc-pct { color: var(--tier2); }
+.alloc-card.t3 .alloc-pct { color: var(--tier3); }
+.alloc-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 12px; }
+.alloc-trades { font-size: 12px; color: var(--text); line-height: 1.7; }
+.alloc-bar-wrap { margin-bottom: 40px; }
+.alloc-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; }
+.alloc-bar > div { transition: width 0.6s ease; }
+.bar-t1 { background: var(--tier1); flex: 60; }
+.bar-t2 { background: var(--tier2); flex: 25; }
+.bar-t3 { background: var(--tier3); flex: 15; }
+.carry-budget {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 28px 32px; margin-bottom: 40px;
+}
+.carry-budget h4 {
+  font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--green); margin-bottom: 12px; font-weight: 600;
+}
+.carry-budget p { font-family: var(--serif); font-size: 14px; line-height: 1.8; color: var(--text); }
+.carry-budget strong { color: var(--text-bright); }
+.risks-list { list-style: none; }
+.risks-list li {
+  padding: 12px 16px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  margin-bottom: 6px; font-size: 12px; color: var(--text);
+  line-height: 1.6; display: flex; gap: 12px; align-items: flex-start;
+}
+.risk-icon { color: var(--red); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.footer-disc {
+  margin-top: 48px; padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 10px; color: var(--text-dim); line-height: 1.7;
+  font-style: italic;
+}
+@media (max-width: 900px) {
+  header, main, nav { padding-left: 20px; padding-right: 20px; }
+  .insight-grid, .alloc-grid { grid-template-columns: 1fr; }
+  .trade-header { grid-template-columns: 40px 1fr auto; }
+  .trade-stat:not(:last-of-type) { display: none; }
+  .metrics-grid { grid-template-columns: 1fr; }
+  h1 { font-size: 24px; }
+}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<header>
+  <div class="header-top">
+    <div>
+      <div class="header-label">Trade Structuring Memo</div>
+      <h1>Private Credit <span>Short Thesis</span></h1>
+      <p style="font-family: var(--serif); font-size: 15px; color: var(--text-dim); margin-top: 8px; font-style: italic;">
+        8 Priority Entities — Why, What Instrument, How to Structure, Carry & Upside
+      </p>
+      <div class="header-meta">
+        <span class="meta-conf">Confidential</span>
+        <span class="meta-date">February 2026</span>
+        <span class="meta-status">For Discussion Purposes Only</span>
+      </div>
+    </div>
+    <div class="header-badge">Not Investment Advice</div>
+  </div>
+</header>
+<nav>
+  <button class="active" onclick="showSection('exec', this)">Executive Summary</button>
+  <button onclick="showSection('table', this)">Summary Table</button>
+  <button onclick="showSection('trades', this)">Trade Structures</button>
+  <button onclick="showSection('portfolio', this)">Portfolio & Allocation</button>
+</nav>
+<main>
+<div id="exec" class="section active">
+  <div class="section-title">Executive Summary</div>
+  <div class="section-subtitle">Core thesis: credit instruments consistently offer 5–10× better carry-adjusted risk/reward than equity shorts for expressing private credit deterioration.</div>
+  <div class="insight-grid">
+    <div class="insight-card">
+      <div class="insight-label">Blended Portfolio Carry</div>
+      <div class="insight-value">~1.5–2.0%</div>
+      <div class="insight-desc">Annual cost. Allows 2–3 year holding period covering full NAIC window (2026–2028).</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-label">Equity Short Carry</div>
+      <div class="insight-value">10–18%</div>
+      <div class="insight-desc">Annual dividend + borrow cost. Destroys returns even when thesis is correct.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-label">Priority Trades</div>
+      <div class="insight-value">8</div>
+      <div class="insight-desc">Across 3 tiers spanning CDS, bonds, puts, and exchange-traded instruments.</div>
+    </div>
+  </div>
+  <div class="thesis-box">
+    <p><strong>Bond spreads cost 1–2% annually</strong> to carry versus equity dividends of 10–18%. Duration leverage amplifies spread moves into large price changes. Ratings cliff dynamics create <strong>forced-selling cascades</strong> that do not exist in equity markets. These trades are less crowded as most participants focus on equity shorts.</p>
+  </div>
+  <div class="top3">
+    <div class="top3-header">Three Highest-Conviction Trades</div>
+    <div class="top3-item">
+      <div class="top3-rank">1</div>
+      <div class="top3-content">
+        <h4>Athene 5yr CDS <span class="carry-tag">~1% carry</span></h4>
+        <p>Cleanest expression, no bond borrow needed, isolates pure credit risk. NAIC reform catalyst with defined 2026–2028 timeline. 15–20% upside in stress.</p>
+      </div>
+    </div>
+    <div class="top3-item">
+      <div class="top3-rank">2</div>
+      <div class="top3-content">
+        <h4>Short CRBD on Nasdaq + Long TLT <span class="carry-tag">~1.9% carry</span></h4>
+        <p>Exchange-traded bond shortable through any equity brokerage. 40yr maturity = ~15yr modified duration. Market prices CRBG as vanilla insurer; it is functionally a PE-insurer nexus ($70bn Blackstone, $90bn BlackRock, $24bn Carlisle).</p>
+      </div>
+    </div>
+    <div class="top3-item">
+      <div class="top3-rank">3</div>
+      <div class="top3-content">
+        <h4>Short BPCE Tier 2 + Long Bunds <span class="carry-tag">~1.5% carry</span></h4>
+        <p>Most mispriced instrument in entire thesis. No equity analyst coverage (cooperative). Bond analysts treat as generic French bank credit. Natixis sits on virtually every BDC facility. Zero PC risk premium in spread.</p>
+      </div>
+    </div>
+  </div>
+  <div class="avoid-box">
+    <h4>⚠ One to Avoid</h4>
+    <p><strong>GBDC equity short</strong> — Thesis is correct (26% software, dividend cut) but ~14–16% annual carry from dividend is punishing. Need GBDC to fall &gt;15% in year one just to break even on carry.</p>
+  </div>
+  <div class="thesis-box" style="border-left-color: var(--blue);">
+    <p><strong>Key Structural Insight:</strong> Ratings cliff dynamics in BDC bonds (e.g. FSK) create forced-selling cascades from IG mandates that do not exist in equity markets. A single-notch downgrade from BBB- to BB+ can trigger <strong>10–15 points of price movement in days</strong>, far exceeding the equivalent equity reaction.</p>
+  </div>
+</div>
+<div id="table" class="section">
+  <div class="section-title">All 8 Trades at a Glance</div>
+  <div class="section-subtitle">Net Carry = annual cost after hedging duration risk. Base/Stress = estimated P&L if thesis plays out. All figures approximate and market-dependent.</div>
+  <div class="summary-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Entity</th>
+          <th>Instrument</th>
+          <th>Net Carry</th>
+          <th>Base Case</th>
+          <th>Stress Case</th>
+          <th>Convexity</th>
+          <th>Conviction</th>
+          <th>Timing</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="entity-name">Athene</td>
+          <td>Buy 5yr CDS</td>
+          <td class="carry-neg">-0.8% to -1.2%</td>
+          <td class="return-pos">+6–8%</td>
+          <td class="return-pos">+15–20%</td>
+          <td class="convexity">★★★★★</td>
+          <td><span class="conviction-badge conv-vh">Very High</span></td>
+          <td>6–24mo</td>
+        </tr>
+        <tr>
+          <td class="entity-name">Corebridge</td>
+          <td>Short CRBD + Long TLT</td>
+          <td class="carry-neg">-1.9%</td>
+          <td class="return-pos">+18–25%</td>
+          <td class="return-pos">+35–43%</td>
+          <td class="convexity">★★★★★</td>
+          <td><span class="conviction-badge conv-vh">Very High</span></td>
+          <td>6–18mo</td>
+        </tr>
+        <tr>
+          <td class="entity-name">Lincoln Nat'l</td>
+          <td>Short 7% 2066 + Long UST</td>
+          <td class="carry-neg">-2.2%</td>
+          <td class="return-pos">+10–15%</td>
+          <td class="return-pos">+25%+</td>
+          <td class="convexity">★★★★</td>
+          <td><span class="conviction-badge conv-m">Medium</span></td>
+          <td>6–24mo</td>
+        </tr>
+        <tr>
+          <td class="entity-name">FS KKR</td>
+          <td>Short 6.125% 2031 + Long UST</td>
+          <td class="carry-neg">-1.9%</td>
+          <td class="return-pos">+10–15%</td>
+          <td class="return-pos">+20–25%</td>
+          <td class="convexity">★★★★</td>
+          <td><span class="conviction-badge conv-vh">Very High</span></td>
+          <td>3–12mo</td>
+        </tr>
+        <tr>
+          <td class="entity-name">Golub Cap</td>
+          <td>Short GBDC equity</td>
+          <td class="carry-neg">-14% to -16%</td>
+          <td class="return-pos">+23–31%</td>
+          <td class="return-pos">+38–46%</td>
+          <td class="convexity">★★</td>
+          <td><span class="conviction-badge conv-h">High</span></td>
+          <td>3–12mo</td>
+        </tr>
+        <tr>
+          <td class="entity-name">Natixis/BPCE</td>
+          <td>Short Tier 2 + Long Bund</td>
+          <td class="carry-neg">-1.3% to -1.6%</td>
+          <td class="return-pos">+8–12%</td>
+          <td class="return-pos">+15–25%</td>
+          <td class="convexity">★★★★★</td>
+          <td><span class="conviction-badge conv-vh">Very High</span></td>
+          <td>12–36mo</td>
+        </tr>
+        <tr>
+          <td class="entity-name">Customers Banc</td>
+          <td>Buy CUBI puts (6mo OTM)</td>
+          <td class="carry-neg">-3% to -5%</td>
+          <td class="return-pos">+3–6×</td>
+          <td class="return-pos">+8–15×</td>
+          <td class="convexity">★★★★★</td>
+          <td><span class="conviction-badge conv-h">High</span></td>
+          <td>6–12mo</td>
+        </tr>
+        <tr>
+          <td class="entity-name">Norinchukin</td>
+          <td>Short USD bond + Long UST</td>
+          <td class="carry-neg">-0.5% to -0.8%</td>
+          <td class="return-pos">+4–8%</td>
+          <td class="return-pos">+10–20%</td>
+          <td class="convexity">★★★★</td>
+          <td><span class="conviction-badge conv-m">Medium</span></td>
+          <td>12–36mo</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div id="trades" class="section">
+  <div class="section-title">Detailed Trade Structures</div>
+  <div class="section-subtitle">Click each trade to expand full structure, carry analysis, and rationale.</div>
+  <div id="trade-cards"></div>
+</div>
+<div id="portfolio" class="section">
+  <div class="section-title">Portfolio Construction & Allocation</div>
+  <div class="section-subtitle">Three-tier framework balancing conviction, carry cost, and catalyst timing.</div>
+  <div class="alloc-bar-wrap">
+    <div class="alloc-bar">
+      <div class="bar-t1"></div>
+      <div class="bar-t2"></div>
+      <div class="bar-t3"></div>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 10px; color: var(--text-dim);">
+      <span style="color: var(--tier1);">Tier 1 — 60%</span>
+      <span style="color: var(--tier2);">Tier 2 — 25%</span>
+      <span style="color: var(--tier3);">Tier 3 — 15%</span>
+    </div>
+  </div>
+  <div class="alloc-grid">
+    <div class="alloc-card t1">
+      <div class="alloc-pct">~60%</div>
+      <div class="alloc-label">Tier 1 — Highest Conviction</div>
+      <div class="alloc-trades">
+        <strong>Athene CDS</strong> — Cleanest expression, lowest carry, highest convexity<br>
+        <strong>CRBD short</strong> — Exchange-traded, extreme duration, zero PE awareness<br>
+        <strong>BPCE Tier 2</strong> — Most mispriced, zero analyst attention, pure fund finance
+      </div>
+    </div>
+    <div class="alloc-card t2">
+      <div class="alloc-pct">~25%</div>
+      <div class="alloc-label">Tier 2 — Medium Conviction</div>
+      <div class="alloc-trades">
+        <strong>FSK 6.125% 2031</strong> — Binary ratings cliff trade with defined catalyst<br>
+        <strong>CUBI puts</strong> — Defined risk, convex, clear NDFI thesis
+      </div>
+    </div>
+    <div class="alloc-card t3">
+      <div class="alloc-pct">~15%</div>
+      <div class="alloc-label">Tier 3 — Lower Conviction</div>
+      <div class="alloc-trades">
+        <strong>LNC Jr Sub</strong> — Sound compounding thesis but equity beaten down<br>
+        <strong>Norinchukin</strong> — Correct thesis, implicit gov't support limits downside<br>
+        <strong>GBDC equity</strong> — Right thesis but punishing carry cost
+      </div>
+    </div>
+  </div>
+  <div class="carry-budget">
+    <h4>Blended Portfolio Carry</h4>
+    <p>At recommended allocation weights, blended annual carry cost is approximately <strong>1.5–2.0% of total portfolio notional</strong>. This allows holding the entire portfolio for <strong>2–3 years</strong> before carry erosion becomes material, comfortably covering the <strong>NAIC implementation window (2026–2028)</strong>, SEC examination cycle (FY2026), and the BDC maturity wall (<strong>$12.7bn in 2026</strong>).</p>
+  </div>
+  <div style="margin-bottom: 16px;">
+    <div class="top3-header">Key Risks to Monitor</div>
+  </div>
+  <ul class="risks-list">
+    <li><span class="risk-icon">▸</span> Fed pivot to aggressive easing could compress all credit spreads, working against thesis</li>
+    <li><span class="risk-icon">▸</span> Private credit managers may successfully extend and pretend through 2026–2027</li>
+    <li><span class="risk-icon">▸</span> NAIC lobbying may delay or water down "equal capital for equal risk" implementation</li>
+    <li><span class="risk-icon">▸</span> Japanese government may intervene directly to support Norinchukin</li>
+    <li><span class="risk-icon">▸</span> Strong economic growth could mask software deterioration and maintain lending appetite</li>
+  </ul>
+  <div class="footer-disc">
+    This memo is for discussion purposes only and does not constitute investment advice. All figures are approximate and subject to market conditions. Consult your prime broker for current borrow availability, CDS pricing, and execution details.
+  </div>
+</div>
+</main>
+<script>
+function showSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+const trades = [
+  {
+    num: 1, tier: 'tier1', name: 'Athene Holding', sub: 'Apollo subsidiary — Buy 5yr CDS',
+    carry: '-0.8 to -1.2%', base: '+6–8%', stress: '+15–20%',
+    legs: [['1', 'Athene Holding 5yr CDS', 'Buy', 'Buy credit protection']],
+    metrics: [
+      ['Annual carry cost', '~80–120bps/yr (~$800k–$1.2m per $100mm)'],
+      ['Duration of trade', '5 years (can unwind earlier at MTM)'],
+      ['Base case (spreads → 250bps)', '+6–8 pts (~$6–8mm per $100mm)'],
+      ['Stress case (spreads → 500bps+)', '+15–20 pts (~$15–20mm per $100mm)'],
+      ['Breakeven', 'Spreads stay above ~100bps for 1yr'],
+      ['Max loss', 'Premium paid if no credit event']
+    ],
+    rationale: 'No listed equity exists (subsidiary). CDS isolates pure credit spread risk. Highly convex payoff. Standardised & cleared via ICE Clear Credit. NAIC reform provides clearly defined regulatory catalyst with 2026–2028 timeline.'
+  },
+  {
+    num: 2, tier: 'tier1', name: 'Corebridge Financial', sub: 'CRBD (Nasdaq Jr Sub 6.375% 2064) + Long TLT',
+    carry: '-1.9%', base: '+18–25%', stress: '+35–43%',
+    legs: [
+      ['1', 'CRBD (Nasdaq: Jr Sub 6.375% 2064)', 'Short', 'Credit spread widening bet'],
+      ['2', 'TLT (iShares 20+ Year Treasury ETF)', 'Long', 'Duration hedge to isolate credit']
+    ],
+    metrics: [
+      ['Short CRBD carry', '~6.4% annual (pay coupon on short)'],
+      ['Long TLT carry', '~4.5% annual (receive Treasury yield)'],
+      ['Net annual carry', '~1.9% (6.4% minus 4.5%)'],
+      ['Base case (PE-insurer repricing)', 'CRBD to ~$18–20 = 18–25% profit'],
+      ['Stress case (NAIC + BX marks)', 'CRBD to ~$14–16 = 35–43% profit'],
+      ['Breakeven', 'CRBD drops >~$1.20 within 6 months']
+    ],
+    rationale: '~15yr modified duration. Exchange-traded on Nasdaq = easy to short via any equity brokerage. Jr sub absorbs losses before senior debt. Market has zero awareness of CRBG\'s PE nexus in the bond market.'
+  },
+  {
+    num: 3, tier: 'tier3', name: 'Lincoln National', sub: 'LNC 7.000% 2066 Jr Sub + Long UST',
+    carry: '-2.2%', base: '+10–15%', stress: '+25%+',
+    legs: [
+      ['1', 'LNC 7.000% 2066 Jr Sub Bond', 'Short', 'Credit spread widening'],
+      ['2', 'TLT or 30yr UST futures', 'Long', 'Duration hedge to isolate credit']
+    ],
+    metrics: [
+      ['Short bond carry', '~7% coupon (offset by deep discount accrual)'],
+      ['Long Treasury carry', '~4.5–4.8%'],
+      ['Net annual carry', '~2.2–2.5%'],
+      ['Base case (+100–150bps)', '8–12 pt decline = 10–15% profit'],
+      ['Stress case (downgrade + forced selling)', '20+ pt decline = 25%+ profit'],
+      ['Key risk', 'Bond borrow may be difficult']
+    ],
+    rationale: 'Already weakened from VA guarantee losses. Pivoting to PC for spread income = adding risk on risk. Jr sub bond hasn\'t fully priced compounding PC risk on top of existing VA crisis. Equity at ~$42 vs $70+ pre-COVID.'
+  },
+  {
+    num: 4, tier: 'tier2', name: 'FS KKR Capital', sub: 'FSK 6.125% Unsecured Notes 2031 + Long 5yr UST',
+    carry: '-1.9%', base: '+10–15%', stress: '+20–25%',
+    legs: [
+      ['1', 'FSK 6.125% 2031 Unsecured Notes', 'Short', 'Ratings cliff / spread widening'],
+      ['2', '5yr US Treasury note or futures', 'Long', 'Duration-match to isolate credit']
+    ],
+    metrics: [
+      ['Short bond carry', '~6.1% coupon'],
+      ['Long 5yr UST carry', '~4.2%'],
+      ['Net annual carry', '~1.9%'],
+      ['Base case (IG → HY, 275 → 500–600bps)', '10–15 pt decline = 10–15% profit'],
+      ['Stress case (downgrade + SW defaults)', '20–25 pt decline = 20–25% profit'],
+      ['Binary payoff', 'If NO downgrade: ~2–4% loss (carry)']
+    ],
+    rationale: 'BBB- with Negative Outlook from S&P. IG → HY downgrade forces ALL insurance companies, pension funds, and IG mandates to sell simultaneously. Creates 5–10 points of dislocation within days. FSK equity short has ~21% carry = carry trap.'
+  },
+  {
+    num: 5, tier: 'tier3', name: 'Golub Capital BDC', sub: 'Short GBDC equity (NASDAQ) — Lower conviction due to carry',
+    carry: '-14 to -16%', base: '+23–31%', stress: '+38–46%',
+    legs: [['1', 'GBDC equity (NASDAQ)', 'Short', 'Dividend cut + NAV decline']],
+    metrics: [
+      ['Carry cost', '~12–14% div + ~1–2% borrow = 14–16% annual'],
+      ['Base case (15–20% div cut + SW marks)', 'Stock to ~$9–10 = 23–31% profit'],
+      ['Stress case (SW defaults, 30%+ div cut)', 'Stock to ~$7–8 = 38–46% profit'],
+      ['Breakeven', 'Need ~$1.70–2.00 decline in 12 months'],
+      ['Key risk', 'Timing must be precise; wrong by 6mo = loss'],
+      ['Mitigation', 'Consider 6mo puts at ~4–6% premium instead']
+    ],
+    rationale: 'LOWER CONVICTION due to punishing carry. 26% software, already cut div 15%. 99% floating rate portfolio crushed by rate cuts. Nearly fully leveraged. Puts preferred for defined risk, convex exposure.'
+  },
+  {
+    num: 6, tier: 'tier1', name: 'Natixis / BPCE Group', sub: 'BPCE Tier 2 Sub Bonds (EUR) + Long German Bund',
+    carry: '-1.3 to -1.6%', base: '+8–12%', stress: '+15–25%',
+    legs: [
+      ['1', 'BPCE Tier 2 subordinated bond (EUR)', 'Short', 'Credit spread widening'],
+      ['2', 'German Bund (matched maturity)', 'Long', 'Duration hedge, isolate credit']
+    ],
+    metrics: [
+      ['BPCE Tier 2 spread', '~130–160bps over Bunds currently'],
+      ['Net carry cost', '~1.3–1.6% annual'],
+      ['Base case (fund finance losses → 250–300bps)', '5–8 pts per duration = 8–12% profit'],
+      ['Stress case (systemic PC stress → 400–500bps)', '15–25% profit'],
+      ['Key advantage', 'Zero PC premium priced = all upside unpriced'],
+      ['Key risk', 'French gov\'t support; ECB backstop']
+    ],
+    rationale: 'MOST MISPRICED INSTRUMENT IN ENTIRE THESIS. No listed equity = no equity analyst attention. Bond analysts classify as generic French cooperative bank credit. Nobody analysing Natixis\'s BDC revolving facility exposures. Fund finance concentration completely invisible to bond market.'
+  },
+  {
+    num: 7, tier: 'tier2', name: 'Customers Bancorp', sub: 'Buy CUBI 6-month OTM Puts (~80% strike)',
+    carry: '-3 to -5%', base: '3–6× premium', stress: '8–15× premium',
+    legs: [
+      ['A', 'CUBI 6mo puts, strike ~80% of spot', 'Buy', 'Defined-risk convex downside'],
+      ['B', 'CUBI equity (alternative)', 'Short', 'Linear exposure, lower cost if no div']
+    ],
+    metrics: [
+      ['Put premium (6mo, 20% OTM)', '~3–5% of notional (vol-dependent)'],
+      ['Equity short carry', '~1–2% borrow only (minimal dividend)'],
+      ['Base case (PC fund stress)', 'Puts: 3–6× on premium'],
+      ['Stress case ("cockroach" narrative)', 'Puts: 8–15× on premium'],
+      ['Max loss (puts)', 'Premium paid — defined and capped'],
+      ['Max loss (equity)', 'Unlimited; CUBI could re-rate higher']
+    ],
+    rationale: '~33% NDFI = highest named among US banks. ~15–17% lender finance to PC funds. Zero-loss track record over 10+ years = potential complacency. Puts provide defined risk with convex payoff. Can roll forward if thesis takes longer.'
+  },
+  {
+    num: 8, tier: 'tier3', name: 'Norinchukin Bank', sub: 'Short USD Senior Bond + Long matched UST',
+    carry: '-0.5 to -0.8%', base: '+4–8%', stress: '+10–20%',
+    legs: [
+      ['1', 'Norinchukin USD senior bond (longest duration)', 'Short', 'Spread widening on CLO stress'],
+      ['2', 'UST of matched maturity', 'Long', 'Duration hedge']
+    ],
+    metrics: [
+      ['Norinchukin USD spread', '~50–80bps over Treasuries (very tight)'],
+      ['Net carry cost', '~0.5–0.8% annual (lowest of all 8)'],
+      ['Base case (CLO marks decline)', 'Spread to 150–200bps = 4–8 pts gain'],
+      ['Stress case (CLO impairment)', 'Spread to 300–400bps = 10–20 pt gain'],
+      ['Key risk', 'Japanese gov\'t "too important to fail"'],
+      ['Alternative', 'Short JPY bonds + Long JGB (no FX risk)']
+    ],
+    rationale: 'Single largest CLO investor in the world: $74bn = 11% of total assets. Absurdly tight spreads for entity with extreme single-asset-class concentration. Moving 60bps → 200bps is huge % move = convexity from starting point. Lowest carry of all 8 trades — can hold 3–5 years.'
+  }
+];
+const cardsContainer = document.getElementById('trade-cards');
+trades.forEach(t => {
+  const tierClass = t.tier === 'tier1' ? 'tier1-bg' : t.tier === 'tier2' ? 'tier2-bg' : 'tier3-bg';
+  const legsHTML = t.legs.map(l => '<tr><td>'+l[0]+'</td><td>'+l[1]+'</td><td>'+l[2]+'</td><td>'+l[3]+'</td></tr>').join('');
+  const metricsHTML = t.metrics.map(m => '<div class="metric-row"><span class="metric-label">'+m[0]+'</span><span class="metric-value">'+m[1]+'</span></div>').join('');
+  cardsContainer.innerHTML += '<div class="trade-card" onclick="this.classList.toggle(\'open\')"><div class="trade-header"><div class="trade-num '+tierClass+'">'+t.num+'</div><div class="trade-name"><h3>'+t.name+'</h3><span class="trade-sub">'+t.sub+'</span></div><div class="trade-stat"><div class="trade-stat-label">Net Carry</div><div class="trade-stat-value carry-neg">'+t.carry+'</div></div><div class="trade-stat"><div class="trade-stat-label">Stress Case</div><div class="trade-stat-value return-pos">'+t.stress+'</div></div><div class="trade-toggle">▾</div></div><div class="trade-body"><div class="trade-content"><div class="trade-section"><div class="trade-section-title">Trade Structure</div><table class="legs-table"><thead><tr><th>Leg</th><th>Instrument</th><th>Direction</th><th>Purpose</th></tr></thead><tbody>'+legsHTML+'</tbody></table></div><div class="trade-section"><div class="trade-section-title">Carry & Upside</div><div class="metrics-grid">'+metricsHTML+'</div></div><div class="trade-section"><div class="trade-section-title">Rationale</div><div class="trade-rationale"><p>'+t.rationale+'</p></div></div></div></div></div>';
+});
+</script>
+</body>
+</html>
